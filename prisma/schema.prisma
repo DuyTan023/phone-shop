@@ -1,0 +1,107 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model brands {
+  id          Int        @id @default(autoincrement())
+  name        String     @db.VarChar(255)
+  slug        String     @unique @db.VarChar(255)
+  logo        String?    @db.VarChar(255)
+  description String?
+  products    products[]
+}
+
+model categories {
+  id       Int        @id @default(autoincrement())
+  name     String     @db.VarChar(255)
+  slug     String?    @db.VarChar(255)
+  products products[]
+}
+
+model colors {
+  id               Int                @id @default(autoincrement())
+  name             String             @db.VarChar(100)
+  hex_code         String             @unique @db.VarChar(7)
+  product_variants product_variants[]
+}
+
+model product_images {
+  id               Int               @id @default(autoincrement())
+  product_id       Int
+  variant_id       Int?
+  image_url        String            @db.VarChar(500)
+  is_featured      Boolean?          @default(false)
+  products         products          @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_image_product")
+  product_variants product_variants? @relation(fields: [variant_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_image_variant")
+}
+
+model product_specs {
+  product_id  Int
+  spec_key_id Int
+  spec_value  String
+  spec_keys   spec_keys @relation(fields: [spec_key_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_spec_key")
+  products    products  @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_spec_product")
+
+  @@id([product_id, spec_key_id])
+}
+
+model product_variants {
+  id             Int              @id @default(autoincrement())
+  product_id     Int
+  color_id       Int?
+  storage_id     Int?
+  ram_id         Int?
+  sku            String?          @unique @db.VarChar(100)
+  price          Decimal          @default(0) @db.Decimal(12, 2)
+  stock          Int              @default(0)
+  product_images product_images[]
+  colors         colors?          @relation(fields: [color_id], references: [id], onUpdate: NoAction, map: "fk_variant_color")
+  products       products         @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_variant_product")
+  rams           rams?            @relation(fields: [ram_id], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_variant_ram")
+  storages       storages?        @relation(fields: [storage_id], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_variant_storage")
+}
+
+model products {
+  id               Int                @id @default(autoincrement())
+  brand_id         Int?
+  category_id      Int?
+  name             String             @db.VarChar(255)
+  slug             String?            @unique @db.VarChar(255)
+  description      String?
+  product_images   product_images[]
+  product_specs    product_specs[]
+  product_variants product_variants[]
+  brands           brands?            @relation(fields: [brand_id], references: [id], onUpdate: NoAction, map: "fk_product_brand")
+  categories       categories?        @relation(fields: [category_id], references: [id], onUpdate: NoAction, map: "fk_product_category")
+}
+
+model rams {
+  id               Int                @id @default(autoincrement())
+  value            String             @db.VarChar(20)
+  product_variants product_variants[]
+}
+
+model spec_groups {
+  id        Int         @id @default(autoincrement())
+  name      String      @db.VarChar(100)
+  spec_keys spec_keys[]
+}
+
+model spec_keys {
+  id            Int             @id @default(autoincrement())
+  group_id      Int
+  name          String          @db.VarChar(100)
+  product_specs product_specs[]
+  spec_groups   spec_groups     @relation(fields: [group_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_spec_key_group")
+}
+
+model storages {
+  id               Int                @id @default(autoincrement())
+  value            String             @db.VarChar(20)
+  product_variants product_variants[]
+}

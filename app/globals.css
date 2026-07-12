@@ -24,3 +24,10 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+/* Ép widget của cloudinary luôn nằm trên cùng và nhận mọi tương tác chuột */
+.cloudinary-cloudinary-widget,
+#cloudinary-overlay,
+#cloudinary-widget {
+  z-index: 99999 !important;
+  pointer-events: auto !important;
+}
