@@ -1,6 +1,7 @@
 import { Prisma, type colors } from "@/app/generated/prisma/client";
 import { colorRepository } from "@/lib/repositories/catalogs/colors.repository";
 import { PaginationResult } from "./../../types/public/types";
+
 type GetColorParams = {
   page?: number;
   limit?: number;
@@ -18,10 +19,11 @@ export const colorService = {
         total: total,
         page: page,
         limit: limit,
-        totalPage: Math.ceil(total / limit),
+        totalPage: Math.ceil(total / limit) || 1, // Tránh trả về 0 khi không có bản ghi nào
       };
     } catch (err) {
-      throw new Error("Không thể lấy danh sách màu" + err);
+      console.error("Lỗi tại getColor service:", err); // Ghi log ra màn hình server để debug
+      throw new Error("SERVER_ERROR"); // Đồng bộ chuẩn hóa lỗi với các hàm bên dưới
     }
   },
 
@@ -31,7 +33,11 @@ export const colorService = {
       if (!color) throw new Error("NOT_FOUND");
       return color;
     } catch (err) {
-      if (err instanceof Error && err.message === "NOT_FOUND") throw err;
+      // Nếu lỗi do chính chúng ta chủ động throw ("NOT_FOUND") ở phía trên, hãy ném tiếp nó đi
+      if (err instanceof Error && err.message === "NOT_FOUND") {
+        throw err;
+      }
+      // Các lỗi hệ thống khác (mất kết nối DB, sai cú pháp query...) sẽ chuyển thành SERVER_ERROR
       throw new Error("SERVER_ERROR");
     }
   },
@@ -51,9 +57,18 @@ export const colorService = {
     }
   },
 
-  updateColor: async (name: string, hex_code: string): Promise<colors> => {
+  updateColor: async (
+    name: string,
+    hex_code: string,
+    description: string,
+  ): Promise<colors> => {
     try {
-      return await colorRepository.updateColorByHexCode(name, hex_code);
+      // Đã sửa thành truyền Object khớp hoàn toàn với Repository mới
+      return await colorRepository.updateColorByHexCode({
+        name,
+        hex_code,
+        description,
+      });
     } catch (err) {
       // Bắt mã lỗi của Prisma khi không tìm thấy bản ghi (P2025)
       if (
@@ -72,12 +87,12 @@ export const colorService = {
       return await colorRepository.deleteColor(hex_code);
     } catch (err) {
       if (err instanceof Prisma.PrismaClientKnownRequestError) {
-        // Trường hợp 1: Slug không tồn tại trong DB
+        // Trường hợp 1: Hex code không tồn tại trong DB
         if (err.code === "P2025") {
           throw new Error("NOT_FOUND");
         }
 
-        // Trường hợp 2: Brand này đang có sản phẩm thuộc về nó, không được xóa bừa bãi
+        // Trường hợp 2: Màu này đang được gán cho biến thể sản phẩm, không được xóa bừa bãi
         if (err.code === "P2003") {
           throw new Error("COLOR_HAS_PRODUCTS");
         }

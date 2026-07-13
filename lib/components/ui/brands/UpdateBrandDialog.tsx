@@ -1,5 +1,6 @@
 "use client";
 
+import type { brands } from "@/app/generated/prisma/client";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -19,16 +20,8 @@ import { ImagePlus, Loader2, Pencil, X } from "lucide-react";
 import { CldImage, CldUploadWidget } from "next-cloudinary";
 import { useEffect, useState } from "react";
 
-interface Brand {
-  id: number;
-  name: string;
-  slug: string | null;
-  logo: string | null;
-  description: string | null;
-}
-
 interface UpdateBrandDialogProps {
-  brand: Brand;
+  brand: brands;
   onSuccess?: () => void;
 }
 

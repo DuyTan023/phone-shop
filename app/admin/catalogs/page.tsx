@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { BrandsSection } from "@/lib/components/ui/brands/brandsSelection";
+import { ColorsSection } from "@/lib/components/ui/colors/colorsSelection";
 import {
   Building2,
   ChevronRight,
@@ -73,18 +74,6 @@ const navGroups = [
 ];
 
 // ─── Mock data ────────────────────────────────────────────────────────────────
-
-const mockBrands = [
-  { id: 1, name: "Apple", slug: "apple", description: "Think Different" },
-  { id: 2, name: "Samsung", slug: "samsung", description: "Do What You Can't" },
-  {
-    id: 3,
-    name: "Xiaomi",
-    slug: "xiaomi",
-    description: "Innovation for Everyone",
-  },
-  { id: 4, name: "OPPO", slug: "oppo", description: "Smile to More" },
-];
 
 const mockCategories = [
   { id: 1, name: "Gaming", slug: "gaming" },
@@ -465,68 +454,6 @@ function CategoriesSection() {
 }
 
 // ─── Section: Colors ──────────────────────────────────────────────────────────
-
-function ColorsSection() {
-  return (
-    <div>
-      <SectionHeader
-        title="Màu sắc"
-        description="Các màu sắc biến thể sản phẩm"
-        onAdd={() => {}}
-        addLabel="Thêm màu"
-      />
-      <SearchBar placeholder="Tìm kiếm màu sắc..." />
-      <div className={tableWrap}>
-        <table className="w-full text-sm">
-          <thead className={thead}>
-            <tr>
-              <th className={th} style={{ width: 56 }}>
-                Màu
-              </th>
-              <th className={th}>Tên</th>
-              <th className={th}>Mã hex</th>
-              <th className={th}>Preview</th>
-              <th className={thRight} style={{ width: 80 }}>
-                Hành động
-              </th>
-            </tr>
-          </thead>
-          <tbody className={tbody}>
-            {mockColors.map((color) => (
-              <tr key={color.id} className={tr}>
-                <td className={td}>
-                  <div
-                    className="w-7 h-7 rounded-full border border-slate-200 shadow-sm"
-                    style={{ backgroundColor: color.hex_code }}
-                  />
-                </td>
-                <td className={`${td} font-medium text-slate-800`}>
-                  {color.name}
-                </td>
-                <td className={td}>
-                  <code className="text-xs text-slate-600 bg-slate-100 px-2 py-0.5 rounded font-mono">
-                    {color.hex_code}
-                  </code>
-                </td>
-                <td className={td}>
-                  <div
-                    className="h-4 w-20 rounded-full border border-slate-200"
-                    style={{ backgroundColor: color.hex_code }}
-                  />
-                </td>
-                <td className={`${td} text-right`}>
-                  <div className="flex items-center justify-end">
-                    <ActionButtons />
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-}
 
 // ─── Section: Storages & RAMs ─────────────────────────────────────────────────
 

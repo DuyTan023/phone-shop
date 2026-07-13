@@ -27,6 +27,7 @@ model colors {
   id               Int                @id @default(autoincrement())
   name             String             @db.VarChar(100)
   hex_code         String             @unique @db.VarChar(7)
+  description      String?
   product_variants product_variants[]
 }
 
