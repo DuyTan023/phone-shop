@@ -88,7 +88,7 @@ export async function DELETE(req: NextRequest, { params }: routeContext) {
           success: false,
           message: "Không thể xóa vì đang được sử dụng",
         },
-        { status: 400 },
+        { status: 409 },
       );
     } else {
       return NextResponse.json<ApiResponse<null>>(

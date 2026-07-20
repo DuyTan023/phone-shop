@@ -10,7 +10,6 @@ import {
   HardDrive,
   Layers,
   LayoutGrid,
-  MemoryStick,
   MoreHorizontal,
   Palette,
   Pencil,
@@ -30,7 +29,6 @@ type Section =
   | "categories"
   | "colors"
   | "storages"
-  | "rams"
   | "spec_groups"
   | "spec_keys"
   | "variants";
@@ -56,7 +54,6 @@ const navGroups = [
     items: [
       { key: "colors" as Section, label: "Màu sắc", icon: Palette },
       { key: "storages" as Section, label: "Bộ nhớ ROM", icon: HardDrive },
-      { key: "rams" as Section, label: "RAM", icon: MemoryStick },
       { key: "variants" as Section, label: "Biến thể sản phẩm", icon: Layers },
     ],
   },
@@ -335,13 +332,7 @@ function OverviewSection({ setSection }: { setSection: (s: Section) => void }) {
       count: "5 tùy chọn",
       color: "text-orange-500 bg-orange-50",
     },
-    {
-      key: "rams" as Section,
-      label: "RAM",
-      icon: MemoryStick,
-      count: "5 tùy chọn",
-      color: "text-yellow-500 bg-yellow-50",
-    },
+
     {
       key: "variants" as Section,
       label: "Biến thể sản phẩm",
@@ -499,37 +490,6 @@ function ChipListSection({
           <Plus size={13} />
           Thêm tùy chọn
         </button>
-      </div>
-
-      <div className={tableWrap}>
-        <table className="w-full text-sm">
-          <thead className={thead}>
-            <tr>
-              <th className={th} style={{ width: 72 }}>
-                ID
-              </th>
-              <th className={th}>Giá trị</th>
-              <th className={thRight} style={{ width: 80 }}>
-                Hành động
-              </th>
-            </tr>
-          </thead>
-          <tbody className={tbody}>
-            {data.map((item) => (
-              <tr key={item.id} className={tr}>
-                <td className={`${td} text-slate-400`}>#{item.id}</td>
-                <td className={`${td} font-medium text-slate-800`}>
-                  {item.value}
-                </td>
-                <td className={`${td} text-right`}>
-                  <div className="flex items-center justify-end">
-                    <ActionButtons />
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
       </div>
     </div>
   );
@@ -780,8 +740,7 @@ function CatalogTabs({
     { key: "brands", label: "Thương hiệu" },
     { key: "categories", label: "Phân loại" },
     { key: "colors", label: "Màu sắc" },
-    { key: "storages", label: "ROM" },
-    { key: "rams", label: "RAM" },
+    { key: "storages", label: "ROM & RAM" },
     { key: "variants", label: "Biến thể" },
     { key: "spec_groups", label: "Nhóm thông số" },
     { key: "spec_keys", label: "Tên thông số" },
@@ -826,22 +785,23 @@ export default function CatalogDashboardPage() {
         return <ColorsSection />;
       case "storages":
         return (
-          <ChipListSection
-            title="Bộ nhớ ROM"
-            description="Các tùy chọn dung lượng lưu trữ"
-            data={mockStorages}
-            unit="ROM"
-          />
+          <div>
+            <ChipListSection
+              title="Bộ nhớ ROM"
+              description="Các tùy chọn dung lượng lưu trữ"
+              data={mockStorages}
+              unit="ROM"
+            />
+
+            <ChipListSection
+              title="RAM"
+              description="Các tùy chọn dung lượng RAM"
+              data={mockRams}
+              unit="RAM"
+            />
+          </div>
         );
-      case "rams":
-        return (
-          <ChipListSection
-            title="RAM"
-            description="Các tùy chọn dung lượng RAM"
-            data={mockRams}
-            unit="RAM"
-          />
-        );
+
       case "spec_groups":
         return <SpecGroupsSection />;
       case "spec_keys":

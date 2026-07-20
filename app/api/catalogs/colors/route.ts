@@ -14,7 +14,6 @@ export async function GET(req: NextRequest) {
       Math.min(100, Number(searchParams.get("limit") || 10)),
     ); // Giới hạn max 100 item để tránh bị ddos kéo sập db
 
-    // Đổi tên biến từ 'colors' thành 'result' để tránh xung đột với Type 'colors'
     const result = await colorService.getColor({ page, limit });
 
     return NextResponse.json<ApiResponse<PaginationResult<colors>>>({
@@ -54,7 +53,6 @@ export async function POST(req: NextRequest) {
     const formattedHex = hex_code.trim().toUpperCase();
     const formattedName = name.trim();
 
-    // Sửa tên biến từ 'brand' thành 'newColor' cho đúng ngữ cảnh
     const newColor = await colorService.createColor(
       formattedName,
       formattedHex,
