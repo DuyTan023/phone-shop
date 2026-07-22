@@ -4,6 +4,10 @@ import { Button } from "@/components/ui/button";
 import { BrandsSection } from "@/lib/components/ui/brands/brandsSelection";
 import { ColorsSection } from "@/lib/components/ui/colors/colorsSelection";
 import {
+  RamSelection,
+  StorageSelection,
+} from "@/lib/components/ui/rom_ram/rom_ram_selection";
+import {
   Building2,
   ChevronRight,
   Cpu,
@@ -448,53 +452,6 @@ function CategoriesSection() {
 
 // ─── Section: Storages & RAMs ─────────────────────────────────────────────────
 
-function ChipListSection({
-  title,
-  description,
-  data,
-  unit,
-}: {
-  title: string;
-  description: string;
-  data: { id: number; value: string }[];
-  unit?: string;
-}) {
-  return (
-    <div>
-      <SectionHeader
-        title={title}
-        description={description}
-        onAdd={() => {}}
-        addLabel={`Thêm ${unit ?? ""}`}
-      />
-      <div className="flex flex-wrap gap-2 mb-5">
-        {data.map((item) => (
-          <div
-            key={item.id}
-            className="group flex items-center gap-1.5 bg-white border border-slate-200 hover:border-slate-300 rounded-lg px-3 py-2 transition-colors"
-          >
-            <span className="font-medium text-slate-700 text-sm">
-              {item.value}
-            </span>
-            <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150 ml-1">
-              <button className="p-1 rounded text-slate-400 hover:text-blue-500 transition-colors">
-                <Pencil size={11} />
-              </button>
-              <button className="p-1 rounded text-slate-400 hover:text-red-500 transition-colors">
-                <Trash2 size={11} />
-              </button>
-            </div>
-          </div>
-        ))}
-        <button className="flex items-center gap-1.5 border border-dashed border-slate-300 rounded-lg px-3 py-2 text-slate-400 hover:text-blue-500 hover:border-blue-300 transition-colors text-sm">
-          <Plus size={13} />
-          Thêm tùy chọn
-        </button>
-      </div>
-    </div>
-  );
-}
-
 // ─── Section: Spec Groups ─────────────────────────────────────────────────────
 
 function SpecGroupsSection() {
@@ -786,19 +743,8 @@ export default function CatalogDashboardPage() {
       case "storages":
         return (
           <div>
-            <ChipListSection
-              title="Bộ nhớ ROM"
-              description="Các tùy chọn dung lượng lưu trữ"
-              data={mockStorages}
-              unit="ROM"
-            />
-
-            <ChipListSection
-              title="RAM"
-              description="Các tùy chọn dung lượng RAM"
-              data={mockRams}
-              unit="RAM"
-            />
+            <RamSelection />
+            <StorageSelection />
           </div>
         );
 
