@@ -63,7 +63,7 @@ export const specGroupService = {
 
   deleteSpecGroup: async (id: number): Promise<spec_groups> => {
     try {
-      return await specGroupService.deleteSpecGroup(id);
+      return await spectGroupRepository.deleteSpecGroup(id);
     } catch (err) {
       if (err instanceof PrismaClientKnownRequestError) {
         if (err.code === "P2025") {
