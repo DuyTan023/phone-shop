@@ -7,6 +7,9 @@ import {
   RamSelection,
   StorageSelection,
 } from "@/lib/components/ui/rom_ram/rom_ram_selection";
+import SpecGroupsSection from "@/lib/components/ui/spec_groups/SpecGroupsSection";
+
+import { SpecKeysSection } from "@/lib/components/ui/spec_keys/spec_keys_Selection";
 import {
   Building2,
   ChevronRight,
@@ -454,95 +457,7 @@ function CategoriesSection() {
 
 // ─── Section: Spec Groups ─────────────────────────────────────────────────────
 
-function SpecGroupsSection() {
-  return (
-    <div>
-      <SectionHeader
-        title="Nhóm thông số kỹ thuật"
-        description="Màn hình, Pin, Cấu hình, Camera, Kết nối..."
-        onAdd={() => {}}
-        addLabel="Thêm nhóm"
-      />
-      <SearchBar placeholder="Tìm kiếm nhóm thông số..." />
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-        {mockSpecGroups.map((group) => (
-          <div
-            key={group.id}
-            className="group flex items-center justify-between p-3.5 bg-white border border-slate-200 rounded-xl hover:border-slate-300 hover:shadow-sm transition-all"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-teal-50 flex items-center justify-center">
-                <Settings2 size={14} className="text-teal-500" />
-              </div>
-              <span className="font-medium text-slate-800 text-sm">
-                {group.name}
-              </span>
-            </div>
-            <ActionButtons />
-          </div>
-        ))}
-        <button className="flex items-center justify-center gap-2 p-3.5 border border-dashed border-slate-300 rounded-xl text-slate-400 hover:text-teal-500 hover:border-teal-300 transition-colors text-sm">
-          <Plus size={14} />
-          Thêm nhóm
-        </button>
-      </div>
-    </div>
-  );
-}
-
 // ─── Section: Spec Keys ───────────────────────────────────────────────────────
-
-function SpecKeysSection() {
-  return (
-    <div>
-      <SectionHeader
-        title="Tên thông số kỹ thuật"
-        description="Tần số quét, Độ sáng, NFC, Chất liệu khung..."
-        onAdd={() => {}}
-        addLabel="Thêm thông số"
-      />
-      <SearchBar placeholder="Tìm kiếm thông số..." />
-      <div className={tableWrap}>
-        <table className="w-full text-sm">
-          <thead className={thead}>
-            <tr>
-              <th className={th} style={{ width: 56 }}>
-                ID
-              </th>
-              <th className={th} style={{ width: 140 }}>
-                Nhóm
-              </th>
-              <th className={th}>Tên thông số</th>
-              <th className={thRight} style={{ width: 80 }}>
-                Hành động
-              </th>
-            </tr>
-          </thead>
-          <tbody className={tbody}>
-            {mockSpecKeys.map((key) => (
-              <tr key={key.id} className={tr}>
-                <td className={`${td} text-slate-400`}>#{key.id}</td>
-                <td className={td}>
-                  <span className="text-xs font-medium text-teal-600 bg-teal-50 px-2 py-0.5 rounded-full">
-                    {key.group}
-                  </span>
-                </td>
-                <td className={`${td} font-medium text-slate-800`}>
-                  {key.name}
-                </td>
-                <td className={`${td} text-right`}>
-                  <div className="flex items-center justify-end">
-                    <ActionButtons />
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-}
 
 // ─── Section: Product Variants ────────────────────────────────────────────────
 

@@ -4,21 +4,21 @@ import type { brands } from "@/app/generated/prisma/client";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
-  DialogClose,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Field, FieldGroup } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ImagePlus, Loader2, Pencil, X } from "lucide-react";
+import type { ApiResponse } from "@/lib/types/public/types";
+import { ImagePlus, Loader2, Pencil, Trash2 } from "lucide-react";
 import { CldImage, CldUploadWidget } from "next-cloudinary";
-import { useEffect, useState } from "react";
+import { useState, useTransition } from "react";
+
+const API_URL = "/api/catalogs/brands";
 
 interface UpdateBrandDialogProps {
   brand: brands;
@@ -30,103 +30,118 @@ export function UpdateBrandDialog({
   onSuccess,
 }: UpdateBrandDialogProps) {
   const [open, setOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const [logoUrl, setLogoUrl] = useState(brand.logo || "");
   const [isUploading, setIsUploading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
 
-  // Đồng bộ lại logoUrl nếu dữ liệu brand từ ngoài thay đổi
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setLogoUrl(brand.logo || "");
-  }, [brand.logo]);
+  // Pattern React: Reset state trực tiếp khi đóng/mở dialog
+  const [prevOpen, setPrevOpen] = useState(open);
+  if (open !== prevOpen) {
+    setPrevOpen(open);
+    if (open) {
+      setLogoUrl(brand.logo || "");
+      setErrorMessage(null);
+    }
+  }
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     if (!brand.slug) {
-      alert("Không tìm thấy slug của thương hiệu này!");
+      setErrorMessage("Không tìm thấy slug của thương hiệu này!");
       return;
     }
 
-    setIsLoading(true);
+    setErrorMessage(null);
     const formData = new FormData(event.currentTarget);
 
     const payload = {
       name: formData.get("name"),
-      logo: logoUrl,
+      logo: logoUrl || null,
+      description: formData.get("description") || null,
     };
 
-    try {
-      const response = await fetch(`/api/catalogs/brands/${brand.slug}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
+    startTransition(async () => {
+      try {
+        const res = await fetch(`${API_URL}/${brand.slug}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
 
-      const result = await response.json();
+        const result: ApiResponse<null> = await res.json();
 
-      if (result.success) {
-        setOpen(false);
-        if (onSuccess) onSuccess();
-      } else {
-        alert(result.message || "Có lỗi xảy ra khi cập nhật brand");
+        if (res.ok && result.success) {
+          setOpen(false);
+          onSuccess?.();
+        } else {
+          setErrorMessage(
+            result.message || "Có lỗi xảy ra khi cập nhật thương hiệu",
+          );
+        }
+      } catch (err) {
+        setErrorMessage("Lỗi hệ thống khi gửi yêu cầu cập nhật");
       }
-    } catch (err) {
-      console.error(err);
-      alert("Lỗi kết nối server");
-    } finally {
-      setIsLoading(false);
-    }
-  }
+    });
+  };
 
   return (
-    <Dialog
-      open={open}
-      onOpenChange={(v) => {
-        setOpen(v);
-        if (!v) setLogoUrl(brand.logo || "");
-      }}
-    >
-      {/* TRIGGER ĐẶT ĐỘC LẬP VỚI FORM */}
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <button
-          type="button"
+        <Button
+          variant="ghost"
+          size="icon"
           className="p-1.5 rounded-md text-blue-500 hover:bg-blue-50 hover:text-blue-600 transition-colors inline-flex items-center justify-center"
           title="Cập nhật"
         >
           <Pencil className="h-4 w-4" />
-        </button>
+        </Button>
       </DialogTrigger>
 
-      {/* THÊM bg-white ĐỂ ĐẢM BẢO DIALOG MÀU TRẮNG */}
-      <DialogContent className="sm:max-w-sm bg-white text-black">
-        {/* ĐƯA THẺ FORM VÀO ĐÂY ĐỂ TRÁNH LỖI PHÂN TÁCH DIALOG */}
+      <DialogContent className="sm:max-w-[440px] bg-white border border-slate-100 p-5 gap-4">
         <form onSubmit={handleSubmit} className="space-y-4">
-          <DialogHeader>
-            <DialogTitle>Cập nhật thương hiệu</DialogTitle>
-            <DialogDescription>
-              Chỉnh sửa thông tin chi tiết của thương hiệu. Nhấn lưu để hoàn
-              tất.
-            </DialogDescription>
+          <DialogHeader className="space-y-1">
+            <div className="flex items-center gap-3 mb-1">
+              <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center shrink-0 text-slate-700">
+                <Pencil size={18} />
+              </div>
+              <div>
+                <DialogTitle className="font-semibold text-slate-800 text-sm">
+                  Cập nhật thương hiệu
+                </DialogTitle>
+                <DialogDescription className="text-xs text-slate-500">
+                  Chỉnh sửa thông tin chi tiết của thương hiệu. Nhấn lưu để hoàn
+                  tất.
+                </DialogDescription>
+              </div>
+            </div>
           </DialogHeader>
 
-          <FieldGroup>
-            {/* Field Tên thương hiệu */}
-            <Field>
-              <Label htmlFor={`name-${brand.id}`}>Tên thương hiệu</Label>
+          {/* Form Fields Container */}
+          <div className="space-y-3">
+            {/* Field: Tên thương hiệu */}
+            <div className="space-y-1.5">
+              <Label
+                htmlFor={`name-${brand.id}`}
+                className="text-xs font-medium text-slate-700"
+              >
+                Tên thương hiệu <span className="text-red-500">*</span>
+              </Label>
               <Input
                 id={`name-${brand.id}`}
                 name="name"
                 defaultValue={brand.name}
                 required
+                className="h-9 text-xs border-slate-200 focus-visible:ring-slate-400 rounded-lg placeholder:text-slate-400"
               />
-            </Field>
+            </div>
 
-            {/* Field Logo */}
-            <Field>
-              <Label>Logo thương hiệu</Label>
+            {/* Field: Logo Upload */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-slate-700">
+                Logo thương hiệu
+              </Label>
 
               <CldUploadWidget
                 uploadPreset="brand_logos"
@@ -137,36 +152,6 @@ export function UpdateBrandDialog({
                   cropping: true,
                   croppingAspectRatio: 1,
                   language: "vi",
-                  text: {
-                    vi: {
-                      local: { browse: "Chọn ảnh từ máy" },
-                    },
-                  },
-                  // 🔥 THÊM ĐOẠN CẤU HÌNH STYLES NÀY VÀO:
-                  styles: {
-                    palette: {
-                      window: "#FFFFFF",
-                      windowBorder: "#90A4AE",
-                      tabIcon: "#0078FF",
-                      menuIcons: "#5A616A",
-                      textDark: "#000000",
-                      textLight: "#FFFFFF",
-                      link: "#0078FF",
-                      action: "#FF620C",
-                      inactiveTabIcon: "#0E2F5A",
-                      error: "#F44235",
-                      inProgress: "#0078FF",
-                      complete: "#20B2AA",
-                      sourceBg: "#E4EBF1",
-                    },
-                    fonts: {
-                      default: null,
-                      "'Fira Sans', sans-serif": {
-                        url: "https://fonts.googleapis.com/css?family=Fira+Sans",
-                        active: true,
-                      },
-                    },
-                  },
                 }}
                 onUpload={() => setIsUploading(true)}
                 onSuccess={(result) => {
@@ -182,87 +167,112 @@ export function UpdateBrandDialog({
                 }}
                 onError={() => setIsUploading(false)}
               >
-                {({ open }) => (
+                {({ open: openCloudinary }) => (
                   <div className="flex items-center gap-3">
                     <button
                       type="button"
                       onClick={() => {
                         document.body.style.pointerEvents = "auto";
-                        open();
+                        openCloudinary();
                       }}
                       disabled={isUploading}
-                      className="relative h-20 w-20 shrink-0 rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 hover:border-blue-400 hover:bg-blue-50/50 transition-colors flex items-center justify-center overflow-hidden group"
-                      title="Bấm để chọn ảnh"
+                      className="relative h-16 w-16 shrink-0 rounded-lg border border-dashed border-slate-200 bg-slate-50 hover:border-slate-400 hover:bg-slate-100/60 transition-colors flex items-center justify-center overflow-hidden group"
                     >
                       {isUploading ? (
-                        <Loader2 className="h-5 w-5 animate-spin text-blue-500" />
+                        <Loader2 className="h-4 w-4 animate-spin text-slate-500" />
                       ) : logoUrl ? (
                         <CldImage
                           src={logoUrl}
                           alt="Logo thương hiệu"
-                          width={80}
-                          height={80}
+                          width={64}
+                          height={64}
                           crop="fill"
                           gravity="auto"
                           className="h-full w-full object-cover"
                         />
                       ) : (
-                        <ImagePlus className="h-6 w-6 text-gray-400 group-hover:text-blue-500" />
+                        <ImagePlus className="h-5 w-5 text-slate-400 group-hover:text-slate-600 transition-colors" />
                       )}
                     </button>
 
-                    <div className="flex flex-col gap-1.5 text-sm">
+                    <div className="flex flex-col gap-1 text-xs">
                       <button
                         type="button"
                         onClick={() => {
                           document.body.style.pointerEvents = "auto";
-                          open();
+                          openCloudinary();
                         }}
                         disabled={isUploading}
-                        className="text-blue-600 hover:text-blue-700 font-medium text-left"
+                        className="text-slate-700 hover:text-slate-900 font-medium text-left transition-colors"
                       >
-                        {logoUrl ? "Đổi ảnh khác" : "Tải ảnh lên"}
+                        {logoUrl ? "Đổi ảnh khác" : "Tải logo lên"}
                       </button>
 
-                      {logoUrl && (
+                      {logoUrl ? (
                         <button
                           type="button"
                           onClick={() => setLogoUrl("")}
-                          className="text-gray-400 hover:text-red-500 flex items-center gap-1 text-left"
+                          className="text-red-500 hover:text-red-600 flex items-center gap-1 text-left transition-colors"
                         >
-                          <X className="h-3 w-3" />
-                          Xoá ảnh
+                          <Trash2 size={12} />
+                          Xóa logo
                         </button>
+                      ) : (
+                        <span className="text-slate-400">
+                          Khuyên dùng ảnh vuông PNG, JPG
+                        </span>
                       )}
                     </div>
                   </div>
                 )}
               </CldUploadWidget>
-            </Field>
+            </div>
 
-            {/* Field Mô tả */}
-            <Field>
-              <Label htmlFor={`desc-${brand.id}`}>Mô tả</Label>
+            {/* Field: Mô tả */}
+            <div className="space-y-1.5">
+              <Label
+                htmlFor={`desc-${brand.id}`}
+                className="text-xs font-medium text-slate-700"
+              >
+                Mô tả
+              </Label>
               <Textarea
                 id={`desc-${brand.id}`}
                 name="description"
                 defaultValue={brand.description || ""}
-                rows={3}
+                rows={2}
+                className="text-xs border-slate-200 focus-visible:ring-slate-400 rounded-lg placeholder:text-slate-400 resize-none p-2.5"
               />
-            </Field>
-          </FieldGroup>
+            </div>
 
-          <DialogFooter className="pt-2">
-            <DialogClose asChild>
-              <Button variant="outline" type="button">
-                Hủy
-              </Button>
-            </DialogClose>
+            {/* Banner hiển thị lỗi */}
+            {errorMessage && (
+              <div className="p-2.5 text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg">
+                {errorMessage}
+              </div>
+            )}
+          </div>
 
-            <Button type="submit" disabled={isLoading || isUploading}>
-              {isLoading ? "Đang lưu..." : "Lưu thay đổi"}
+          {/* Footer Actions */}
+          <div className="flex items-center justify-end gap-2 pt-2">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => setOpen(false)}
+              disabled={isPending || isUploading}
+              className="px-3.5 py-1.5 h-auto text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+            >
+              Hủy
             </Button>
-          </DialogFooter>
+            <Button
+              type="submit"
+              disabled={isPending || isUploading}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 h-auto text-xs font-medium text-white bg-slate-900 hover:bg-slate-800 rounded-lg disabled:opacity-50 transition-colors shadow-sm"
+            >
+              {isPending && <Loader2 size={14} className="animate-spin" />}
+              {isPending ? "Đang lưu..." : "Lưu thay đổi"}
+            </Button>
+          </div>
         </form>
       </DialogContent>
     </Dialog>

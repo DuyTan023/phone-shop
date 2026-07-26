@@ -4,20 +4,18 @@ import type { colors } from "@/app/generated/prisma/client";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
-  DialogClose,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Field, FieldGroup } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Pencil } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Loader2, Pencil } from "lucide-react";
 import { useState } from "react";
-import { toast } from "sonner"; // Chuyển từ alert sang toast cho đồng bộ UX với form Create nhé bạn
+import { toast } from "sonner";
 
 interface UpdateColorDialogProps {
   color: colors;
@@ -30,17 +28,15 @@ export function UpdateColorDialog({
 }: UpdateColorDialogProps) {
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-
-  const [hex_code, setHexCode] = useState(color.hex_code || "#000000");
+  const [hexCode, setHexCode] = useState(color.hex_code || "#000000");
 
   const handleOpenChange = (isOpen: boolean) => {
     setOpen(isOpen);
     setHexCode(color.hex_code || "#000000");
   };
 
-  // Hàm xử lý khi gõ text trực tiếp để ô Color Picker không bị crash hiển thị
   const handleHexTextChange = (val: string) => {
-    let cleanVal = val.replace(/[^0-9a-fA-F#]/g, ""); // Chỉ nhận ký tự HEX hợp lệ
+    let cleanVal = val.replace(/[^0-9a-fA-F#]/g, "");
 
     if (cleanVal.length > 0 && !cleanVal.startsWith("#")) {
       cleanVal = "#" + cleanVal;
@@ -54,7 +50,7 @@ export function UpdateColorDialog({
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    const hexTrimmed = hex_code.trim();
+    const hexTrimmed = hexCode.trim();
     const hexRegex = /^#[0-9A-Fa-f]{6}$/;
 
     if (!hexRegex.test(hexTrimmed)) {
@@ -65,7 +61,6 @@ export function UpdateColorDialog({
     setIsLoading(true);
     const formData = new FormData(event.currentTarget);
 
-    // Sửa tên key từ hexCode thành hex_code khớp hoàn toàn với API Route body destruct
     const payload = {
       name: (formData.get("name") as string)?.trim(),
       hex_code: hexTrimmed,
@@ -73,7 +68,6 @@ export function UpdateColorDialog({
     };
 
     try {
-      // SỬA ĐỔI QUAN TRỌNG: Mã hóa ký tự đặc biệt # trên URL bằng encodeURIComponent
       const safeUrlParam = encodeURIComponent(color.hex_code);
       const response = await fetch(`/api/catalogs/colors/${safeUrlParam}`, {
         method: "PUT",
@@ -103,89 +97,131 @@ export function UpdateColorDialog({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <button
-          type="button"
+        <Button
+          variant="ghost"
+          size="icon"
           className="p-1.5 rounded-md text-blue-500 hover:bg-blue-50 hover:text-blue-600 transition-colors inline-flex items-center justify-center"
-          title="Cập nhật màu"
+          title="Cập nhật"
         >
           <Pencil className="h-4 w-4" />
-        </button>
+        </Button>
       </DialogTrigger>
 
       <DialogContent
         key={`${color.id}-${open}`}
-        className="sm:max-w-sm bg-white text-black"
+        className="sm:max-w-[440px] bg-white border border-slate-100 p-5 gap-4"
       >
         <form onSubmit={handleSubmit} className="space-y-4">
-          <DialogHeader>
-            <DialogTitle>Cập nhật màu sắc</DialogTitle>
-            <DialogDescription>
-              Chỉnh sửa thông tin chi tiết của màu sắc sản phẩm. Nhấn lưu để
-              hoàn tất.
-            </DialogDescription>
+          <DialogHeader className="space-y-1">
+            <div className="flex items-center gap-3 mb-1">
+              <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center shrink-0 text-slate-700">
+                <Pencil size={18} />
+              </div>
+              <div>
+                <DialogTitle className="font-semibold text-slate-800 text-sm">
+                  Cập nhật màu sắc
+                </DialogTitle>
+                <DialogDescription className="text-xs text-slate-500">
+                  Chỉnh sửa thông tin chi tiết của màu sắc. Nhấn lưu để hoàn
+                  tất.
+                </DialogDescription>
+              </div>
+            </div>
           </DialogHeader>
 
-          <FieldGroup>
-            {/* Tên màu */}
-            <Field>
-              <Label htmlFor={`color-name-${color.id}`}>Tên màu sắc</Label>
+          {/* Form Fields Container */}
+          <div className="space-y-3">
+            {/* Field: Tên màu */}
+            <div className="space-y-1.5">
+              <Label
+                htmlFor={`color-name-${color.id}`}
+                className="text-xs font-medium text-slate-700"
+              >
+                Tên màu sắc <span className="text-red-500">*</span>
+              </Label>
               <Input
                 id={`color-name-${color.id}`}
                 name="name"
                 defaultValue={color.name}
                 required
                 autoComplete="off"
+                className="h-9 text-xs border-slate-200 focus-visible:ring-slate-400 rounded-lg placeholder:text-slate-400"
               />
-            </Field>
+            </div>
 
-            {/* Mã màu HEX */}
-            <Field>
-              <Label htmlFor={`color-hex-${color.id}`}>Mã màu (Hex Code)</Label>
-              <div className="flex gap-2 items-center">
-                <Input
-                  id={`color-hex-${color.id}`}
-                  type="color"
-                  // Đảm bảo giá trị truyền vào picker luôn là chữ thường và chuẩn cấu trúc màu sắc
-                  value={
-                    hex_code.startsWith("#") && hex_code.length === 7
-                      ? hex_code.toLowerCase()
-                      : "#000000"
-                  }
-                  onChange={(e) => setHexCode(e.target.value)}
-                  className="w-12 h-10 p-1 block rounded-md cursor-pointer custom-color-picker"
-                />
+            {/* Field: Mã màu (HEX) */}
+            <div className="space-y-1.5">
+              <Label
+                htmlFor={`color-hex-${color.id}`}
+                className="text-xs font-medium text-slate-700"
+              >
+                Mã màu (HEX) <span className="text-red-500">*</span>
+              </Label>
+              <div className="flex gap-2">
+                <div className="relative w-9 h-9 shrink-0 rounded-lg border border-slate-200 overflow-hidden flex items-center justify-center bg-slate-50">
+                  <Input
+                    id={`color-hex-${color.id}`}
+                    type="color"
+                    value={
+                      hexCode.startsWith("#") && hexCode.length === 7
+                        ? hexCode.toLowerCase()
+                        : "#000000"
+                    }
+                    onChange={(e) => setHexCode(e.target.value)}
+                    disabled={isLoading}
+                    className="absolute inset-0 w-[150%] h-[150%] -top-1/4 -left-1/4 cursor-pointer p-0 border-none bg-transparent"
+                  />
+                </div>
                 <Input
                   type="text"
-                  value={hex_code}
+                  value={hexCode}
                   onChange={(e) => handleHexTextChange(e.target.value)}
                   placeholder="#000000"
-                  className="font-mono uppercase flex-1"
+                  disabled={isLoading}
+                  className="h-9 text-xs font-mono uppercase flex-1 border-slate-200 focus-visible:ring-slate-400 rounded-lg placeholder:text-slate-400"
                 />
               </div>
-            </Field>
+            </div>
 
-            {/* Mô tả màu sắc nếu có */}
-            <Field>
-              <Label htmlFor={`color-desc-${color.id}`}>Mô tả</Label>
-              <Input
+            {/* Field: Mô tả */}
+            <div className="space-y-1.5">
+              <Label
+                htmlFor={`color-desc-${color.id}`}
+                className="text-xs font-medium text-slate-700"
+              >
+                Mô tả
+              </Label>
+              <Textarea
                 id={`color-desc-${color.id}`}
                 name="description"
                 defaultValue={color.description || ""}
-                autoComplete="off"
+                rows={2}
+                disabled={isLoading}
+                className="text-xs border-slate-200 focus-visible:ring-slate-400 rounded-lg placeholder:text-slate-400 resize-none p-2.5"
               />
-            </Field>
-          </FieldGroup>
+            </div>
+          </div>
 
-          <DialogFooter className="pt-2">
-            <DialogClose asChild>
-              <Button variant="outline" type="button" disabled={isLoading}>
-                Hủy
-              </Button>
-            </DialogClose>
-            <Button type="submit" disabled={isLoading}>
+          {/* Footer Actions */}
+          <div className="flex items-center justify-end gap-2 pt-2">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => setOpen(false)}
+              disabled={isLoading}
+              className="px-3.5 py-1.5 h-auto text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+            >
+              Hủy
+            </Button>
+            <Button
+              type="submit"
+              disabled={isLoading}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 h-auto text-xs font-medium text-white bg-slate-900 hover:bg-slate-800 rounded-lg disabled:opacity-50 transition-colors shadow-sm"
+            >
+              {isLoading && <Loader2 size={14} className="animate-spin" />}
               {isLoading ? "Đang lưu..." : "Lưu thay đổi"}
             </Button>
-          </DialogFooter>
+          </div>
         </form>
       </DialogContent>
     </Dialog>

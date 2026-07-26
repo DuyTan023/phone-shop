@@ -7,25 +7,26 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
+import type { ApiResponse } from "@/lib/types/public/types";
 import { Loader2, Trash2 } from "lucide-react";
 import { useState, useTransition } from "react";
 
-interface DeleteDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  itemName: string;
-  itemId?: number | string;
-  onConfirm: () => Promise<void> | void;
+const API_URL = "/api/catalogs/spec-keys";
+
+interface DeleteSpecKeyDialogProps {
+  id: number;
+  name: string;
+  onDeleted: () => void;
 }
 
-export function DeleteDialog({
-  open,
-  onOpenChange,
-  itemName,
-  itemId,
-  onConfirm,
-}: DeleteDialogProps) {
+export function DeleteSpecKeyDialog({
+  id,
+  name,
+  onDeleted,
+}: DeleteSpecKeyDialogProps) {
+  const [open, setOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -38,24 +39,37 @@ export function DeleteDialog({
     }
   }
 
-  const handleConfirm = () => {
+  const handleDelete = () => {
     setErrorMessage(null);
     startTransition(async () => {
       try {
-        await onConfirm();
-        onOpenChange(false);
+        const res = await fetch(`${API_URL}/${id}`, { method: "DELETE" });
+        const result: ApiResponse<null> = await res.json();
+
+        if (res.ok && result.success) {
+          setOpen(false);
+          onDeleted();
+        } else {
+          setErrorMessage(result.message || "Không thể xóa thông số này");
+        }
       } catch (err) {
-        setErrorMessage(
-          err instanceof Error
-            ? err.message
-            : "Đã xảy ra lỗi khi gửi yêu cầu xóa",
-        );
+        setErrorMessage("Lỗi hệ thống khi gửi yêu cầu xóa");
       }
     });
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="p-1.5 rounded-md text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors inline-flex items-center justify-center"
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      </DialogTrigger>
+
       <DialogContent className="sm:max-w-[400px] bg-white border border-slate-100 p-5 gap-4">
         <DialogHeader className="space-y-1">
           <div className="flex items-center gap-3 text-red-600 mb-1">
@@ -76,9 +90,9 @@ export function DeleteDialog({
         <DialogDescription asChild className="text-xs text-slate-600 space-y-3">
           <div>
             <p>
-              Bạn có chắc chắn muốn xóa{" "}
-              <strong className="text-slate-800">&quot;{itemName}&quot;</strong>
-              {itemId !== undefined && ` (ID: #${itemId})`} không?
+              Bạn có chắc chắn muốn xóa thông số{" "}
+              <strong className="text-slate-800">&quot;{name}&quot;</strong>{" "}
+              (ID: #{id}) không?
             </p>
 
             {errorMessage && (
@@ -93,7 +107,7 @@ export function DeleteDialog({
           <Button
             type="button"
             variant="ghost"
-            onClick={() => onOpenChange(false)}
+            onClick={() => setOpen(false)}
             disabled={isPending}
             className="px-3.5 py-1.5 h-auto text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
           >
@@ -101,7 +115,7 @@ export function DeleteDialog({
           </Button>
           <Button
             type="button"
-            onClick={handleConfirm}
+            onClick={handleDelete}
             disabled={isPending}
             className="inline-flex items-center gap-1.5 px-3.5 py-1.5 h-auto text-xs font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg disabled:opacity-50 transition-colors shadow-sm"
           >

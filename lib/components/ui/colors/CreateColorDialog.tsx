@@ -1,20 +1,19 @@
 "use client";
 
-import { Loader2 } from "lucide-react";
-import { useState } from "react";
-import { toast } from "sonner";
-
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Loader2, Palette } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
 
 interface CreateColorDialogProps {
   open: boolean;
@@ -36,7 +35,6 @@ export function CreateColorDialog({
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState(INITIAL_FORM_STATE);
 
-  // Hàm trung gian để vừa đóng dialog vừa dọn dẹp dữ liệu cũ an toàn
   const handleClose = () => {
     setFormData(INITIAL_FORM_STATE);
     onOpenChange(false);
@@ -61,7 +59,7 @@ export function CreateColorDialog({
 
       if (json.success) {
         toast.success(json.message || "Thêm màu sắc thành công");
-        handleClose(); // Gọi hàm này để đóng form và xóa sạch chữ đã gõ cùng lúc
+        handleClose();
         onSuccess?.();
       } else {
         toast.error(json.message || "Có lỗi xảy ra, vui lòng thử lại");
@@ -82,19 +80,32 @@ export function CreateColorDialog({
         else onOpenChange(v);
       }}
     >
-      <DialogContent className="bg-white sm:max-w-[425px]">
-        <form onSubmit={handleSubmit}>
-          <DialogHeader>
-            <DialogTitle>Thêm màu sắc mới</DialogTitle>
-            <DialogDescription>
-              Nhập các thông tin chi tiết của màu sắc điện thoại để thêm vào
-              danh mục.
-            </DialogDescription>
+      <DialogContent className="sm:max-w-[440px] bg-white border border-slate-100 p-5 gap-4">
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <DialogHeader className="space-y-1">
+            <div className="flex items-center gap-3 mb-1">
+              <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center shrink-0 text-slate-700">
+                <Palette size={18} />
+              </div>
+              <div>
+                <DialogTitle className="font-semibold text-slate-800 text-sm">
+                  Thêm màu sắc mới
+                </DialogTitle>
+                <DialogDescription className="text-xs text-slate-500">
+                  Nhập thông tin chi tiết màu sắc sản phẩm để thêm vào danh mục.
+                </DialogDescription>
+              </div>
+            </div>
           </DialogHeader>
 
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="name">
+          {/* Form Fields Container */}
+          <div className="space-y-3">
+            {/* Field: Tên màu */}
+            <div className="space-y-1.5">
+              <Label
+                htmlFor="name"
+                className="text-xs font-medium text-slate-700"
+              >
                 Tên màu <span className="text-red-500">*</span>
               </Label>
               <Input
@@ -105,28 +116,35 @@ export function CreateColorDialog({
                   setFormData({ ...formData, name: e.target.value })
                 }
                 disabled={loading}
+                className="h-9 text-xs border-slate-200 focus-visible:ring-slate-400 rounded-lg placeholder:text-slate-400"
               />
             </div>
 
-            <div className="grid gap-2">
-              <Label htmlFor="hex_code">
+            {/* Field: Mã màu (HEX) */}
+            <div className="space-y-1.5">
+              <Label
+                htmlFor="hex_code"
+                className="text-xs font-medium text-slate-700"
+              >
                 Mã màu (HEX) <span className="text-red-500">*</span>
               </Label>
               <div className="flex gap-2">
-                <Input
-                  id="hex_color_picker"
-                  type="color"
-                  className="w-12 h-10 p-1 cursor-pointer rounded-md border"
-                  value={formData.hex_code}
-                  onChange={(e) =>
-                    setFormData({ ...formData, hex_code: e.target.value })
-                  }
-                  disabled={loading}
-                />
+                <div className="relative w-9 h-9 shrink-0 rounded-lg border border-slate-200 overflow-hidden flex items-center justify-center bg-slate-50">
+                  <Input
+                    id="hex_color_picker"
+                    type="color"
+                    className="absolute inset-0 w-[150%] h-[150%] -top-1/4 -left-1/4 cursor-pointer p-0 border-none bg-transparent"
+                    value={formData.hex_code}
+                    onChange={(e) =>
+                      setFormData({ ...formData, hex_code: e.target.value })
+                    }
+                    disabled={loading}
+                  />
+                </div>
                 <Input
                   id="hex_code"
-                  placeholder="#ffffff"
-                  className="font-mono uppercase flex-1"
+                  placeholder="#000000"
+                  className="h-9 text-xs font-mono uppercase flex-1 border-slate-200 focus-visible:ring-slate-400 rounded-lg placeholder:text-slate-400"
                   value={formData.hex_code}
                   onChange={(e) =>
                     setFormData({ ...formData, hex_code: e.target.value })
@@ -136,9 +154,15 @@ export function CreateColorDialog({
               </div>
             </div>
 
-            <div className="grid gap-2">
-              <Label htmlFor="description">Mô tả</Label>
-              <Input
+            {/* Field: Mô tả */}
+            <div className="space-y-1.5">
+              <Label
+                htmlFor="description"
+                className="text-xs font-medium text-slate-700"
+              >
+                Mô tả
+              </Label>
+              <Textarea
                 id="description"
                 placeholder="Nhập mô tả ngắn về màu sắc này (nếu có)"
                 value={formData.description}
@@ -146,34 +170,32 @@ export function CreateColorDialog({
                   setFormData({ ...formData, description: e.target.value })
                 }
                 disabled={loading}
+                rows={2}
+                className="text-xs border-slate-200 focus-visible:ring-slate-400 rounded-lg placeholder:text-slate-400 resize-none p-2.5"
               />
             </div>
           </div>
 
-          <DialogFooter>
+          {/* Footer Actions */}
+          <div className="flex items-center justify-end gap-2 pt-2">
             <Button
               type="button"
-              variant="outline"
+              variant="ghost"
+              onClick={handleClose}
               disabled={loading}
-              onClick={handleClose} // Đổi từ onOpenChange(false) sang handleClose
+              className="px-3.5 py-1.5 h-auto text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
             >
               Hủy
             </Button>
             <Button
               type="submit"
               disabled={loading}
-              className="bg-blue-600 hover:bg-blue-700 text-white"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 h-auto text-xs font-medium text-white bg-slate-900 hover:bg-slate-800 rounded-lg disabled:opacity-50 transition-colors shadow-sm"
             >
-              {loading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Đang lưu...
-                </>
-              ) : (
-                "Lưu lại"
-              )}
+              {loading && <Loader2 size={14} className="animate-spin" />}
+              {loading ? "Đang lưu..." : "Lưu lại"}
             </Button>
-          </DialogFooter>
+          </div>
         </form>
       </DialogContent>
     </Dialog>

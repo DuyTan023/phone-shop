@@ -3,18 +3,15 @@
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
-  DialogClose,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Field, FieldGroup } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ImagePlus, Loader2 } from "lucide-react";
+import { ImagePlus, Loader2, Sparkles, Trash2 } from "lucide-react";
 import { CldImage, CldUploadWidget } from "next-cloudinary";
 import { useState } from "react";
 
@@ -24,17 +21,17 @@ interface CreateBrandDialogProps {
   onSuccess?: () => void;
 }
 
-// Hàm helper chuyển đổi Tiếng Việt có dấu thành slug
+// Helper chuyển đổi Tiếng Việt có dấu thành slug
 function convertToSlug(text: string) {
   return text
     .toLowerCase()
     .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "") // Xóa dấu
+    .replace(/[\u0300-\u036f]/g, "")
     .replace(/đ/g, "d")
-    .replace(/([^0-9a-z-\s])/g, "") // Xóa ký tự đặc biệt
-    .replace(/(\s+)/g, "-") // Thay khoảng trắng bằng dấu -
-    .replace(/-+/g, "-") // Thu gọn nhiều dấu - liên tiếp
-    .replace(/^-+|-+$/g, ""); // Xóa dấu - ở đầu và cuối
+    .replace(/([^0-9a-z-\s])/g, "")
+    .replace(/(\s+)/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-+|-+$/g, "");
 }
 
 export function CreateBrandDialog({
@@ -43,24 +40,30 @@ export function CreateBrandDialog({
   onSuccess,
 }: CreateBrandDialogProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
   const [logoUrl, setLogoUrl] = useState("");
   const [isUploading, setIsUploading] = useState(false);
 
-  // State quản lý slug để có thể tự động điền hoặc sửa thủ công
   const [slug, setSlug] = useState("");
-  // Biến đánh dấu xem người dùng đã tự tay sửa slug chưa (nếu sửa rồi thì dừng tự động đồng bộ)
   const [isSlugEdited, setIsSlugEdited] = useState(false);
 
-  // Hàm reset form khi đóng dialog hoặc tạo thành công
-  const resetForm = () => {
-    setLogoUrl("");
-    setSlug("");
-    setIsSlugEdited(false);
-    setIsUploading(false);
-    setIsLoading(false);
-  };
+  // Pattern của React: Reset state trực tiếp khi đóng/mở Modal
+  const [prevIsOpen, setPrevIsOpen] = useState(open);
+  if (open !== prevIsOpen) {
+    setPrevIsOpen(open);
+    if (!open) {
+      setLogoUrl("");
+      setSlug("");
+      setIsSlugEdited(false);
+      setIsUploading(false);
+      setIsLoading(false);
+      setErrorMessage(null);
+    } else {
+      setErrorMessage(null);
+    }
+  }
 
-  // Sự kiện khi thay đổi tên thương hiệu -> Tự sinh slug
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const nameValue = e.target.value;
     if (!isSlugEdited) {
@@ -68,22 +71,20 @@ export function CreateBrandDialog({
     }
   };
 
-  // Sự kiện khi người dùng tự gõ vào ô slug
   const handleSlugChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSlug(e.target.value);
-    setIsSlugEdited(true); // Đánh dấu là user đã tự sửa
+    setIsSlugEdited(true);
   };
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-
+    setErrorMessage(null);
     setIsLoading(true);
-    const formData = new FormData(event.currentTarget);
 
-    // Chuẩn bị payload khớp với cấu trúc API nhận vào (bao gồm cả slug)
+    const formData = new FormData(event.currentTarget);
     const payload = {
       name: formData.get("name"),
-      slug: slug.trim(), // Lấy từ state slug
+      slug: slug.trim(),
       description: formData.get("description") || null,
       logo: logoUrl || null,
     };
@@ -99,68 +100,83 @@ export function CreateBrandDialog({
 
       const result = await response.json();
 
-      if (result.success) {
+      if (response.ok && result.success) {
         onOpenChange(false);
-        resetForm();
         if (onSuccess) onSuccess();
       } else {
-        // 🔥 XỬ LÝ CHECK TRÙNG SLUG: API của bạn trả về { success: false, message: "Slug đã tồn tại" }
-        alert(result.message || "Có lỗi xảy ra khi tạo brand");
+        setErrorMessage(result.message || "Không thể tạo thương hiệu này");
       }
     } catch (err) {
-      console.error(err);
-      alert("Lỗi kết nối server");
+      setErrorMessage("Lỗi hệ thống khi gửi yêu cầu tạo mới");
     } finally {
       setIsLoading(false);
     }
   }
 
   return (
-    <Dialog
-      open={open}
-      onOpenChange={(v) => {
-        onOpenChange(v);
-        if (!v) resetForm();
-      }}
-    >
-      <DialogContent className="sm:max-w-sm bg-white text-black">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[440px] bg-white border border-slate-100 p-5 gap-4">
         <form onSubmit={handleSubmit} className="space-y-4">
-          <DialogHeader>
-            <DialogTitle>Thêm thương hiệu mới</DialogTitle>
-            <DialogDescription>
-              Nhập thông tin chi tiết để tạo thương hiệu mới vào hệ thống.
-            </DialogDescription>
+          <DialogHeader className="space-y-1">
+            <div className="flex items-center gap-3 mb-1">
+              <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center shrink-0 text-slate-700">
+                <Sparkles size={20} />
+              </div>
+              <div>
+                <DialogTitle className="font-semibold text-slate-800 text-sm">
+                  Thêm thương hiệu mới
+                </DialogTitle>
+                <DialogDescription className="text-xs text-slate-500">
+                  Nhập thông tin chi tiết để tạo thương hiệu vào hệ thống.
+                </DialogDescription>
+              </div>
+            </div>
           </DialogHeader>
 
-          <FieldGroup>
-            {/* Field Tên thương hiệu */}
-            <Field>
-              <Label htmlFor="create-brand-name">Tên thương hiệu</Label>
+          {/* Form Fields Container */}
+          <div className="space-y-3">
+            {/* Field: Tên thương hiệu */}
+            <div className="space-y-1.5">
+              <Label
+                htmlFor="create-brand-name"
+                className="text-xs font-medium text-slate-700"
+              >
+                Tên thương hiệu <span className="text-red-500">*</span>
+              </Label>
               <Input
                 id="create-brand-name"
                 name="name"
-                placeholder="Nhập tên thương hiệu..."
+                placeholder="Ví dụ: Nike, Adidas..."
                 required
                 onChange={handleNameChange}
+                className="h-9 text-xs border-slate-200 focus-visible:ring-slate-400 rounded-lg placeholder:text-slate-400"
               />
-            </Field>
+            </div>
 
-            {/* 🔥 MỚI: Field Slug đường dẫn */}
-            <Field>
-              <Label htmlFor="create-brand-slug">Slug (Đường dẫn)</Label>
+            {/* Field: Slug */}
+            <div className="space-y-1.5">
+              <Label
+                htmlFor="create-brand-slug"
+                className="text-xs font-medium text-slate-700"
+              >
+                Slug (Đường dẫn) <span className="text-red-500">*</span>
+              </Label>
               <Input
                 id="create-brand-slug"
                 name="slug"
-                placeholder="vi-du-ten-thuong-hieu"
+                placeholder="vi-du-nike"
                 required
                 value={slug}
                 onChange={handleSlugChange}
+                className="h-9 text-xs border-slate-200 focus-visible:ring-slate-400 rounded-lg placeholder:text-slate-400"
               />
-            </Field>
+            </div>
 
-            {/* Field Logo */}
-            <Field>
-              <Label>Logo thương hiệu</Label>
+            {/* Field: Logo Upload */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-slate-700">
+                Logo thương hiệu
+              </Label>
               <CldUploadWidget
                 uploadPreset="brand_logos"
                 options={{
@@ -170,35 +186,6 @@ export function CreateBrandDialog({
                   cropping: true,
                   croppingAspectRatio: 1,
                   language: "vi",
-                  text: {
-                    vi: {
-                      local: { browse: "Chọn ảnh từ máy" },
-                    },
-                  },
-                  styles: {
-                    palette: {
-                      window: "#FFFFFF",
-                      windowBorder: "#90A4AE",
-                      tabIcon: "#0078FF",
-                      menuIcons: "#5A616A",
-                      textDark: "#000000",
-                      textLight: "#FFFFFF",
-                      link: "#0078FF",
-                      action: "#FF620C",
-                      inactiveTabIcon: "#0E2F5A",
-                      error: "#F44235",
-                      inProgress: "#0078FF",
-                      complete: "#20B2AA",
-                      sourceBg: "#E4EBF1",
-                    },
-                    fonts: {
-                      default: null,
-                      "'Fira Sans', sans-serif": {
-                        url: "https://fonts.googleapis.com/css?family=Fira+Sans",
-                        active: true,
-                      },
-                    },
-                  },
                 }}
                 onUpload={() => setIsUploading(true)}
                 onSuccess={(result) => {
@@ -214,86 +201,112 @@ export function CreateBrandDialog({
                 }}
                 onError={() => setIsUploading(false)}
               >
-                {({ open }) => (
+                {({ open: openWidget }) => (
                   <div className="flex items-center gap-3">
                     <button
                       type="button"
                       onClick={() => {
                         document.body.style.pointerEvents = "auto";
-                        open();
+                        openWidget();
                       }}
                       disabled={isUploading}
-                      className="relative h-20 w-20 shrink-0 rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 hover:border-blue-400 hover:bg-blue-50/50 transition-colors flex items-center justify-center overflow-hidden group"
-                      title="Bấm để chọn ảnh"
+                      className="relative h-16 w-16 shrink-0 rounded-lg border border-dashed border-slate-200 bg-slate-50 hover:border-slate-400 hover:bg-slate-100/60 transition-colors flex items-center justify-center overflow-hidden group"
                     >
                       {isUploading ? (
-                        <Loader2 className="h-5 w-5 animate-spin text-blue-500" />
+                        <Loader2 className="h-4 w-4 animate-spin text-slate-500" />
                       ) : logoUrl ? (
                         <CldImage
                           src={logoUrl}
                           alt="Logo thương hiệu"
-                          width={80}
-                          height={80}
+                          width={64}
+                          height={64}
                           crop="fill"
                           gravity="auto"
                           className="h-full w-full object-cover"
                         />
                       ) : (
-                        <ImagePlus className="h-6 w-6 text-gray-400 group-hover:text-blue-500" />
+                        <ImagePlus className="h-5 w-5 text-slate-400 group-hover:text-slate-600 transition-colors" />
                       )}
                     </button>
 
-                    <div className="flex flex-col gap-1.5 text-sm">
+                    <div className="flex flex-col gap-1 text-xs">
                       <button
                         type="button"
                         onClick={() => {
                           document.body.style.pointerEvents = "auto";
-                          open();
+                          openWidget();
                         }}
                         disabled={isUploading}
-                        className="text-blue-600 hover:text-blue-700 font-medium text-left"
+                        className="text-slate-700 hover:text-slate-900 font-medium text-left transition-colors"
                       >
-                        {logoUrl ? "Đổi ảnh khác" : "Tải ảnh lên"}
+                        {logoUrl ? "Đổi ảnh khác" : "Tải logo lên"}
                       </button>
 
-                      {logoUrl && (
+                      {logoUrl ? (
                         <button
                           type="button"
                           onClick={() => setLogoUrl("")}
-                          className="text-gray-400 hover:text-red-500 flex items-center gap-1 text-left"
+                          className="text-red-500 hover:text-red-600 flex items-center gap-1 text-left transition-colors"
                         >
-                          Xoá ảnh
+                          <Trash2 size={12} />
+                          Xóa logo
                         </button>
+                      ) : (
+                        <span className="text-slate-400">
+                          Khuyên dùng ảnh vuông PNG, JPG
+                        </span>
                       )}
                     </div>
                   </div>
                 )}
               </CldUploadWidget>
-            </Field>
+            </div>
 
-            {/* Field Mô tả */}
-            <Field>
-              <Label htmlFor="create-brand-desc">Mô tả</Label>
+            {/* Field: Mô tả */}
+            <div className="space-y-1.5">
+              <Label
+                htmlFor="create-brand-desc"
+                className="text-xs font-medium text-slate-700"
+              >
+                Mô tả
+              </Label>
               <Textarea
                 id="create-brand-desc"
                 name="description"
                 placeholder="Nhập mô tả ngắn về thương hiệu..."
-                rows={3}
+                rows={2}
+                className="text-xs border-slate-200 focus-visible:ring-slate-400 rounded-lg placeholder:text-slate-400 resize-none p-2.5"
               />
-            </Field>
-          </FieldGroup>
+            </div>
 
-          <DialogFooter className="pt-2">
-            <DialogClose asChild>
-              <Button variant="outline" type="button">
-                Hủy
-              </Button>
-            </DialogClose>
+            {/* Banner hiển thị lỗi (thay thế window.alert) */}
+            {errorMessage && (
+              <div className="p-2.5 text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg">
+                {errorMessage}
+              </div>
+            )}
+          </div>
 
-            <Button type="submit" disabled={isLoading || isUploading}>
+          {/* Footer Actions */}
+          <div className="flex items-center justify-end gap-2 pt-2">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => onOpenChange(false)}
+              disabled={isLoading || isUploading}
+              className="px-3.5 py-1.5 h-auto text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+            >
+              Hủy
+            </Button>
+            <Button
+              type="submit"
+              disabled={isLoading || isUploading}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 h-auto text-xs font-medium text-white bg-slate-900 hover:bg-slate-800 rounded-lg disabled:opacity-50 transition-colors shadow-sm"
+            >
+              {isLoading && <Loader2 size={14} className="animate-spin" />}
               {isLoading ? "Đang tạo..." : "Tạo mới"}
             </Button>
-          </DialogFooter>
+          </div>
         </form>
       </DialogContent>
     </Dialog>

@@ -1,6 +1,6 @@
 "use client";
 
-import { Loader2 } from "lucide-react";
+import { HardDrive, Loader2, Pencil } from "lucide-react";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
-  DialogFooter,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -67,7 +67,7 @@ export function ChipFormDialog({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent
-        className="sm:max-w-md bg-white border border-slate-200 shadow-lg p-6 rounded-lg"
+        className="sm:max-w-[440px] bg-white border border-slate-100 p-5 gap-4"
         onEscapeKeyDown={(e) => loading && e.preventDefault()}
         onPointerDownOutside={(e) => loading && e.preventDefault()}
       >
@@ -165,28 +165,40 @@ function ChipForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <DialogHeader className="text-left space-y-1">
-        <DialogTitle className="text-lg font-semibold text-slate-900">
-          {isEdit ? "Cập nhật dung lượng" : "Thêm dung lượng mới"}
-        </DialogTitle>
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <DialogHeader className="space-y-1">
+        <div className="flex items-center gap-3 mb-1">
+          <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center shrink-0 text-slate-700">
+            {isEdit ? <Pencil size={18} /> : <HardDrive size={18} />}
+          </div>
+          <div>
+            <DialogTitle className="font-semibold text-slate-800 text-sm">
+              {isEdit ? "Cập nhật dung lượng" : "Thêm dung lượng mới"}
+            </DialogTitle>
+            <DialogDescription className="text-xs text-slate-500">
+              {isEdit
+                ? "Chỉnh sửa thông số dung lượng lưu trữ hiện tại."
+                : "Nhập thông số dung lượng lưu trữ mới cho danh mục."}
+            </DialogDescription>
+          </div>
+        </div>
       </DialogHeader>
 
       <div className="space-y-3">
-        <div className="grid grid-cols-3 gap-3 items-end">
+        <div className="grid grid-cols-3 gap-2.5 items-end">
           <div className="col-span-2 space-y-1.5">
             <Label
               htmlFor="chip-amount"
               className="text-xs font-medium text-slate-700"
             >
-              Giá trị
+              Giá trị <span className="text-red-500">*</span>
             </Label>
             <Input
               id="chip-amount"
               type="number"
               min="0"
               step="any"
-              placeholder="VD: 8, 16, 1.5"
+              placeholder="VD: 8, 16, 128"
               value={amount}
               onChange={(e) => {
                 setAmount(e.target.value);
@@ -194,7 +206,7 @@ function ChipForm({
               }}
               disabled={loading}
               autoFocus
-              className="h-10 border-slate-300 focus-visible:ring-1 focus-visible:ring-slate-950"
+              className="h-9 text-xs border-slate-200 focus-visible:ring-slate-400 rounded-lg placeholder:text-slate-400"
             />
           </div>
 
@@ -208,43 +220,48 @@ function ChipForm({
               }}
               disabled={loading}
             >
-              <SelectTrigger className="h-10 border-slate-300 bg-white">
+              <SelectTrigger className="h-9 text-xs border-slate-200 focus:ring-slate-400 rounded-lg bg-white">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="bg-white border-slate-200">
-                <SelectItem value="GB">GB</SelectItem>
-                <SelectItem value="TB">TB</SelectItem>
+              <SelectContent className="bg-white border-slate-200 text-xs">
+                <SelectItem value="GB" className="text-xs cursor-pointer">
+                  GB
+                </SelectItem>
+                <SelectItem value="TB" className="text-xs cursor-pointer">
+                  TB
+                </SelectItem>
               </SelectContent>
             </Select>
           </div>
         </div>
 
         {error && (
-          <p className="text-xs font-medium text-red-600 bg-red-50 p-2.5 rounded-md border border-red-200">
+          <div className="p-2.5 text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg">
             {error}
-          </p>
+          </div>
         )}
       </div>
 
-      <DialogFooter className="flex sm:flex-row flex-col-reverse sm:justify-end gap-2 pt-2 border-t border-slate-100">
+      {/* Footer Actions */}
+      <div className="flex items-center justify-end gap-2 pt-2">
         <Button
           type="button"
-          variant="outline"
+          variant="ghost"
           onClick={() => onOpenChange(false)}
           disabled={loading}
-          className="h-9 px-4 text-slate-700 border-slate-300 hover:bg-slate-50"
+          className="px-3.5 py-1.5 h-auto text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
         >
           Hủy
         </Button>
         <Button
           type="submit"
           disabled={loading}
-          className="h-9 px-4 bg-slate-900 text-white hover:bg-slate-800"
+          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 h-auto text-xs font-medium text-white bg-slate-900 hover:bg-slate-800 rounded-lg disabled:opacity-50 transition-colors shadow-sm"
         >
-          {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          {loading && <Loader2 size={14} className="animate-spin" />}
           {isEdit ? "Lưu thay đổi" : "Thêm mới"}
         </Button>
-      </DialogFooter>
+      </div>
     </form>
   );
 }

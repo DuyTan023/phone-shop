@@ -132,7 +132,7 @@ export function ChipListSection({
               <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150 ml-1">
                 <button
                   type="button"
-                  className="p-1 rounded text-slate-400 hover:text-blue-500 transition-colors"
+                  className="p-1.5 rounded-md text-blue-500 hover:bg-blue-50 hover:text-blue-600 transition-colors inline-flex items-center justify-center"
                   onClick={() => openEditDialog(item)}
                   title="Chỉnh sửa"
                 >
@@ -140,7 +140,7 @@ export function ChipListSection({
                 </button>
                 <button
                   type="button"
-                  className="p-1 rounded text-slate-400 hover:text-red-500 transition-colors"
+                  className="p-1.5 rounded-md text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors inline-flex items-center justify-center"
                   onClick={() => openDeleteDialog(item)}
                   title="Xóa"
                 >
