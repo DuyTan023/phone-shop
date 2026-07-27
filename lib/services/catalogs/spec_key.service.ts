@@ -80,7 +80,7 @@ export const specKeyService = {
     } catch (err) {
       if (err instanceof Error && err.message === "SPEC_KEY_EXISTS") throw err;
 
-      if (err instanceof PrismaClientKnownRequestError && err.code === "P2025")
+      if (err instanceof PrismaClientKnownRequestError && err.code === "2003")
         throw new Error("NOT_FOUND");
       throw new Error("SERVER_ERROR");
     }

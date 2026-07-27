@@ -610,7 +610,7 @@ function CatalogTabs({
   const tabs = [
     { key: "overview", label: "Tổng quan" },
     { key: "brands", label: "Thương hiệu" },
-    { key: "categories", label: "Phân loại" },
+    { key: "categories", label: "Series" },
     { key: "colors", label: "Màu sắc" },
     { key: "storages", label: "ROM & RAM" },
     { key: "variants", label: "Biến thể" },

@@ -1,6 +1,7 @@
 export type FindManyParams = {
   page?: number;
   limit?: number;
+  keyword?: string;
 };
 export type PaginationResult<T> = {
   data: T[];

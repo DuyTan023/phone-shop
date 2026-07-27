@@ -1,6 +1,8 @@
 
 
 
+
+
 CREATE TABLE brands (
     id SERIAL PRIMARY KEY,         -- Trong Postgres, dùng SERIAL để tự động tăng ID (1, 2, 3...)
     name VARCHAR(255) NOT NULL,    -- Tên thương hiệu, không được để trống
@@ -9,10 +11,25 @@ CREATE TABLE brands (
     description TEXT               -- Mô tả chi tiết về hãng
 );
 
-CREATE TABLE categories (
-    id SERIAL PRIMARY KEY,         -- ID tự động tăng (1, 2, 3...) cho từng danh mục
-    name VARCHAR(100) NOT NULL,    -- Tên danh mục (ví dụ: 'Photo phone', 'Gaming phone')
-    slug VARCHAR(150) UNIQUE       -- Đường dẫn URL thân thiện (ví dụ: 'smartphone', 'tablet'), không được trùng
+-- series của các hãng điện thoai như iPhone17, xiaomi 17...
+CREATE TABLE series (
+    id SERIAL PRIMARY KEY,
+    brand_id INTEGER NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    slug VARCHAR(120) NOT NULL,
+    release_year SMALLINT,
+
+    CONSTRAINT fk_series_brand
+        FOREIGN KEY (brand_id)
+        REFERENCES brands(id)
+        ON UPDATE CASCADE
+        ON DELETE RESTRICT,
+
+    CONSTRAINT uq_series_brand_name
+        UNIQUE (brand_id, name),
+
+    CONSTRAINT uq_series_slug
+        UNIQUE (slug)
 );
 
 
@@ -20,6 +37,7 @@ CREATE TABLE colors (
     id SERIAL PRIMARY KEY,         -- ID tự động tăng (1, 2, 3...) cho từng màu
     name VARCHAR(100) NOT NULL,    -- Tên màu sắc (ví dụ: 'Deep Purple', 'Bạc')
     hex_code VARCHAR(7) UNIQUE     -- Mã màu định dạng HEX (ví dụ: '#FFFFFF', '#000000')
+	description TEXT
 );
 
 CREATE TABLE storages (
