@@ -2,7 +2,7 @@
 
 import { Prisma } from "@/app/generated/prisma/client";
 import type { ApiResponse, PaginationResult } from "@/lib/types/public/types";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { SearchBar, SectionHeader } from "@/app/admin/catalogs/page";
 import {
@@ -41,41 +41,32 @@ export function SpecKeysSection() {
   const [isLoading, setIsLoading] = useState(false);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
 
-  // 1. Hàm load dữ liệu theo trang
-  const loadData = useCallback(async (currentPage: number) => {
-    try {
-      setIsLoading(true);
-      const res = await fetch(
-        `/api/catalogs/spec_keys?page=${currentPage}&limit=${ROWS_PER_PAGE}`,
-      );
-      const result: ApiResponse<PaginationResult<SpecKeyWithGroup>> =
-        await res.json();
+  // 1. Quản lý từ khóa tìm kiếm
+  const [keyword, setKeyword] = useState("");
 
-      if (result.success && result.data) {
-        setSpecKeys(result.data.data);
-        setTotalPages(result.data.totalPage);
-      }
-    } catch (error) {
-      console.error("Lỗi khi fetch dữ liệu spec keys:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+  // 2. Token để kích hoạt refetch sau khi Tạo / Sửa / Xóa thành công
+  const [refreshToken, setRefreshToken] = useState(0);
+  const refetch = () => setRefreshToken((prev) => prev + 1);
 
-  // refresh dùng cho callback của các Dialog (Create/Update/Delete)
-  const handleRefresh = useCallback(() => {
-    loadData(page);
-  }, [loadData, page]);
-
-  // Effect tự động chạy khi `page` đổi (Gọi bất đồng bộ an toàn hoàn toàn cho React Compiler)
+  // 3. Effect đảm nhận Fetching, Debounce 400ms và Tránh Race Condition
   useEffect(() => {
     let ignore = false;
 
-    async function fetchData() {
+    const timer = setTimeout(async () => {
       try {
         setIsLoading(true);
+
+        const queryParams = new URLSearchParams({
+          page: page.toString(),
+          limit: ROWS_PER_PAGE.toString(),
+        });
+
+        if (keyword.trim()) {
+          queryParams.append("keyword", keyword.trim());
+        }
+
         const res = await fetch(
-          `/api/catalogs/spec_keys?page=${page}&limit=${ROWS_PER_PAGE}`,
+          `/api/catalogs/spec_keys?${queryParams.toString()}`,
         );
         const result: ApiResponse<PaginationResult<SpecKeyWithGroup>> =
           await res.json();
@@ -85,18 +76,27 @@ export function SpecKeysSection() {
           setTotalPages(result.data.totalPage);
         }
       } catch (error) {
-        if (!ignore) console.error("Lỗi khi fetch dữ liệu spec keys:", error);
+        if (!ignore) {
+          console.error("Lỗi khi fetch dữ liệu spec keys:", error);
+        }
       } finally {
-        if (!ignore) setIsLoading(false);
+        if (!ignore) {
+          setIsLoading(false);
+        }
       }
-    }
-
-    fetchData();
+    }, 300);
 
     return () => {
       ignore = true;
+      clearTimeout(timer);
     };
-  }, [page]);
+  }, [page, keyword, refreshToken]);
+
+  // Handle thay đổi từ khóa tìm kiếm -> reset trang về 1
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setKeyword(e.target.value);
+    setPage(1);
+  };
 
   const emptyRowsCount = Math.max(0, ROWS_PER_PAGE - specKeys.length);
 
@@ -112,10 +112,15 @@ export function SpecKeysSection() {
       <CreateSpecKeyDialog
         open={isCreateOpen}
         onOpenChange={setIsCreateOpen}
-        onSuccess={handleRefresh}
+        onSuccess={refetch}
       />
 
-      <SearchBar placeholder="Tìm kiếm thông số..." />
+      {/* Thanh tìm kiếm đã gán keyword đầy đủ */}
+      <SearchBar
+        placeholder="Tìm kiếm thông số kỹ thuật..."
+        value={keyword}
+        onChange={handleSearchChange}
+      />
 
       {/* Khung cố định 6 dòng */}
       <div
@@ -165,7 +170,9 @@ export function SpecKeysSection() {
               ) : specKeys.length === 0 ? (
                 <tr style={{ height: ROW_HEIGHT * ROWS_PER_PAGE }}>
                   <td colSpan={4} className="text-center text-slate-400 py-8">
-                    Không tìm thấy thông số kỹ thuật nào.
+                    {keyword
+                      ? `Không tìm thấy thông số nào khớp với "${keyword}".`
+                      : "Không tìm thấy thông số kỹ thuật nào."}
                   </td>
                 </tr>
               ) : (
@@ -193,13 +200,13 @@ export function SpecKeysSection() {
                         <div className="flex items-center justify-end gap-1.5">
                           <UpdateSpecKeyDialog
                             specKey={item}
-                            onSuccess={handleRefresh}
+                            onSuccess={refetch}
                           />
 
                           <DeleteSpecKeyDialog
                             id={item.id}
                             name={item.name}
-                            onDeleted={handleRefresh}
+                            onDeleted={refetch}
                           />
                         </div>
                       </td>

@@ -8,15 +8,21 @@ import { PaginationResult } from "./../../types/public/types";
 type GetBrandParams = {
   page?: number;
   limit?: number;
+  keyword?: string;
 };
 
 export const brandService = {
   getBrand: async ({
     page = 1,
     limit = 10,
+    keyword,
   }: GetBrandParams): Promise<PaginationResult<brands>> => {
     try {
-      const { brands, total } = await brandRepository.findMany({ page, limit });
+      const { brands, total } = await brandRepository.findMany({
+        page,
+        limit,
+        keyword,
+      });
       return {
         data: brands,
         total: total,

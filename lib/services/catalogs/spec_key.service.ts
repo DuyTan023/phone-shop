@@ -10,17 +10,20 @@ import { PaginationResult } from "./../../types/public/types";
 type GetSpecKeyParams = {
   page?: number;
   limit?: number;
+  keyword?: string;
 };
 
 export const specKeyService = {
   GetSpecKey: async ({
     page = 1,
     limit = 10,
+    keyword,
   }: GetSpecKeyParams): Promise<PaginationResult<SpecKeyWithGroup>> => {
     try {
       const { spec_keys, total } = await specKeyRepository.findMany({
         page,
         limit,
+        keyword,
       });
       return {
         data: spec_keys,

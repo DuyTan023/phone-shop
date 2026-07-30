@@ -18,17 +18,38 @@ export const specKeyRepository = {
   findMany: async ({
     page = 1,
     limit = 10,
+    keyword,
   }: FindManyParams): Promise<FindManyResultSpecKey> => {
     const skip = (page - 1) * limit;
-
+    const where = keyword
+      ? {
+          OR: [
+            {
+              name: {
+                contains: keyword,
+                mode: "insensitive" as const,
+              },
+            },
+            {
+              spec_groups: {
+                name: {
+                  contains: keyword,
+                  mode: "insensitive" as const,
+                },
+              },
+            },
+          ],
+        }
+      : undefined;
     const [spec_keys, total] = await prisma.$transaction([
       prisma.spec_keys.findMany({
+        where,
         skip,
         take: limit,
         orderBy: { id: "asc" },
         include: { spec_groups: true },
       }),
-      prisma.spec_keys.count(),
+      prisma.spec_keys.count({ where }),
     ]);
     return { spec_keys, total };
   },

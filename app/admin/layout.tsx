@@ -379,7 +379,7 @@ export default function AdminLayout({
 }) {
   return (
     <SidebarProvider>
-      <div className="flex h-screen w-full overflow-hidden bg-slate-50 font-sans">
+      <div className="flex h-screen w-full overflow-hidden bg-slate-100 font-sans">
         <AdminSidebar />
 
         {/* Main content wrapper */}

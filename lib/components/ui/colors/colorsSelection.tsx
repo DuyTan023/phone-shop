@@ -17,7 +17,7 @@ import { CreateColorDialog } from "./CreateColorDialog";
 import { DeleteColorDialog } from "./DeleteColorDialog";
 import { UpdateColorDialog } from "./UpdateColorDialog";
 
-// ===== Styles (giữ nguyên theo BrandsSection) =====
+// ===== Styles =====
 const cardWrap =
   "flex flex-col rounded-lg border border-slate-100 overflow-hidden";
 const tableScroll = "overflow-x-auto";
@@ -36,31 +36,63 @@ export function ColorsSection() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
+
+  // State quản lý từ khóa tìm kiếm
+  const [keyword, setKeyword] = useState("");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
 
-  const fetchColors = async () => {
-    try {
-      setIsLoading(true);
-      const res = await fetch(
-        `/api/catalogs/colors?page=${page}&limit=${ROWS_PER_PAGE}`,
-      );
-      const result: ApiResponse<PaginationResult<colors>> = await res.json();
+  // Trigger refetch thủ công sau khi Thêm/Sửa/Xóa thành công
+  const [refreshToken, setRefreshToken] = useState(0);
+  const refetch = () => setRefreshToken((prev) => prev + 1);
 
-      if (result.success && result.data) {
-        setColors(result.data.data);
-        setTotalPages(result.data.totalPage);
-      }
-    } catch (error) {
-      console.error("Lỗi khi fetch dữ liệu colors:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
+  // Effect đảm nhận Fetching, Debounce 400ms và Tránh Race Condition
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    fetchColors();
-  }, [page]);
+    let ignore = false;
+
+    const timer = setTimeout(async () => {
+      try {
+        setIsLoading(true);
+
+        const queryParams = new URLSearchParams({
+          page: page.toString(),
+          limit: ROWS_PER_PAGE.toString(),
+        });
+
+        if (keyword.trim()) {
+          queryParams.append("keyword", keyword.trim());
+        }
+
+        const res = await fetch(
+          `/api/catalogs/colors?${queryParams.toString()}`,
+        );
+        const result: ApiResponse<PaginationResult<colors>> = await res.json();
+
+        if (!ignore && result.success && result.data) {
+          setColors(result.data.data);
+          setTotalPages(result.data.totalPage);
+        }
+      } catch (error) {
+        if (!ignore) {
+          console.error("Lỗi khi fetch dữ liệu colors:", error);
+        }
+      } finally {
+        if (!ignore) {
+          setIsLoading(false);
+        }
+      }
+    }, 300);
+
+    return () => {
+      ignore = true;
+      clearTimeout(timer);
+    };
+  }, [page, keyword, refreshToken]);
+
+  // Đổi từ khóa tìm kiếm -> reset trang về 1
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setKeyword(e.target.value);
+    setPage(1);
+  };
 
   const emptyRowsCount = Math.max(0, ROWS_PER_PAGE - colors.length);
 
@@ -76,10 +108,15 @@ export function ColorsSection() {
       <CreateColorDialog
         open={isCreateOpen}
         onOpenChange={setIsCreateOpen}
-        onSuccess={fetchColors}
+        onSuccess={refetch}
       />
 
-      <SearchBar placeholder="Tìm kiếm màu sắc..." />
+      {/* Thanh tìm kiếm đã gắn đầy đủ Props */}
+      <SearchBar
+        placeholder="Tìm kiếm màu sắc theo tên..."
+        value={keyword}
+        onChange={handleSearchChange}
+      />
 
       <div
         className={`${cardWrap} flex flex-col justify-between overflow-hidden rounded-xl border border-slate-100 shadow-sm bg-white`}
@@ -138,7 +175,9 @@ export function ColorsSection() {
               ) : colors.length === 0 ? (
                 <tr style={{ height: ROW_HEIGHT * ROWS_PER_PAGE }}>
                   <td colSpan={6} className="text-center text-slate-400 py-8">
-                    Không tìm thấy màu sắc nào.
+                    {keyword
+                      ? `Không tìm thấy màu sắc nào khớp với "${keyword}".`
+                      : "Không có màu sắc nào."}
                   </td>
                 </tr>
               ) : (
@@ -186,12 +225,12 @@ export function ColorsSection() {
                         <div className="flex items-center justify-end gap-1.5">
                           <UpdateColorDialog
                             color={color}
-                            onSuccess={fetchColors}
+                            onSuccess={refetch}
                           />
                           <DeleteColorDialog
                             hexCode={color.hex_code}
                             colorName={color.name}
-                            onDeleted={fetchColors}
+                            onDeleted={refetch}
                           />
                         </div>
                       </td>
@@ -215,6 +254,7 @@ export function ColorsSection() {
           </table>
         </div>
 
+        {/* Dynamic Pagination */}
         <div className="flex justify-end items-center px-4 py-3 border-t border-slate-100 bg-slate-50/30 min-h-[52px]">
           {totalPages > 1 ? (
             <Pagination className="mx-0 w-auto">

@@ -9,7 +9,8 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const page = Number(searchParams.get("page") || 1);
     const limit = Number(searchParams.get("limit") || 10);
-    const brands = await brandService.getBrand({ page, limit });
+    const keyword = searchParams.get("keyword") || undefined;
+    const brands = await brandService.getBrand({ page, limit, keyword });
     return NextResponse.json<ApiResponse<PaginationResult<brands>>>({
       success: true,
       message: "Lấy danh sách brand thành công",

@@ -8,7 +8,8 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const page = Number(searchParams.get("page") || 1);
     const limit = Number(searchParams.get("limit") || 10);
-    const spec_keys = await specKeyService.GetSpecKey({ page, limit });
+    const keyword = searchParams.get("keyword") || undefined;
+    const spec_keys = await specKeyService.GetSpecKey({ page, limit, keyword });
     return NextResponse.json<ApiResponse<PaginationResult<spec_keys>>>({
       success: true,
       message: "Lấy danh sách danh sách thông số thành công",

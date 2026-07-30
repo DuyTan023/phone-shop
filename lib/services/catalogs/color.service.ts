@@ -5,21 +5,27 @@ import { PaginationResult } from "./../../types/public/types";
 type GetColorParams = {
   page?: number;
   limit?: number;
+  keyword?: string;
 };
 
 export const colorService = {
   getColor: async ({
     page = 1,
     limit = 10,
+    keyword,
   }: GetColorParams): Promise<PaginationResult<colors>> => {
     try {
-      const { colors, total } = await colorRepository.findMany({ page, limit });
+      const { colors, total } = await colorRepository.findMany({
+        page,
+        limit,
+        keyword,
+      });
       return {
         data: colors,
         total: total,
         page: page,
         limit: limit,
-        totalPage: Math.ceil(total / limit) || 1, // Tránh trả về 0 khi không có bản ghi nào
+        totalPage: Math.ceil(total / limit), // Tránh trả về 0 khi không có bản ghi nào
       };
     } catch (err) {
       console.error("Lỗi tại getColor service:", err); // Ghi log ra màn hình server để debug

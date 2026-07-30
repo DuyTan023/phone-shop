@@ -95,7 +95,7 @@ export function SeriesSection() {
   useEffect(() => {
     const timer = setTimeout(() => {
       fetchSeries();
-    }, 0);
+    }, 300);
 
     return () => clearTimeout(timer);
   }, [fetchSeries]);

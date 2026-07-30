@@ -20,7 +20,7 @@ import { UpdateBrandDialog } from "./UpdateBrandDialog";
 
 // ===== Styles =====
 const cardWrap =
-  "flex flex-col rounded-lg border border-slate-100 overflow-hidden"; // khung tổng, giữ ngang tự nhiên theo container cha
+  "flex flex-col rounded-lg border border-slate-100 overflow-hidden";
 const tableScroll = "overflow-x-auto";
 const thead = "bg-slate-50 border-b border-slate-100 text-slate-600";
 const th = "px-4 py-3 text-left font-semibold";
@@ -29,8 +29,8 @@ const tbody = "divide-y divide-slate-100";
 const tr = "hover:bg-slate-50/50 transition-colors";
 const td = "px-4 py-3 text-slate-600 align-middle";
 
-const ROWS_PER_PAGE = 6; // 6 dòng / trang cố định
-const ROW_HEIGHT = 57; // px, ước lượng chiều cao mỗi hàng (padding + line-height), chỉnh nếu cần
+const ROWS_PER_PAGE = 6;
+const ROW_HEIGHT = 57;
 
 export function BrandsSection() {
   const [brands, setBrands] = useState<brands[]>([]);
@@ -38,53 +38,87 @@ export function BrandsSection() {
   const [totalPages, setTotalPages] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
 
-  const fetchBrands = async () => {
-    try {
-      setIsLoading(true);
-      const res = await fetch(
-        `/api/catalogs/brands?page=${page}&limit=${ROWS_PER_PAGE}`,
-      );
-      const result: ApiResponse<PaginationResult<brands>> = await res.json();
+  const [keyword, setkeyword] = useState("");
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
 
-      if (result.success && result.data) {
-        setBrands(result.data.data);
-        setTotalPages(result.data.totalPage);
+  // Trigger refetch thủ công sau khi Thêm/Sửa/Xóa thành công
+  const [refreshToken, setRefreshToken] = useState(0);
+  const refetch = () => setRefreshToken((prev) => prev + 1);
+
+  // Một useEffect duy nhất đảm nhận cả Fetching, Debounce và Cleanup
+  useEffect(() => {
+    let ignore = false;
+
+    const timer = setTimeout(async () => {
+      try {
+        setIsLoading(true);
+
+        const queryParams = new URLSearchParams({
+          page: page.toString(),
+          limit: ROWS_PER_PAGE.toString(),
+        });
+
+        if (keyword.trim()) {
+          queryParams.append("keyword", keyword.trim());
+        }
+
+        const res = await fetch(
+          `/api/catalogs/brands?${queryParams.toString()}`,
+        );
+        const result: ApiResponse<PaginationResult<brands>> = await res.json();
+
+        // Tránh race condition nếu component unmount hoặc effect re-run
+        if (!ignore && result.success && result.data) {
+          setBrands(result.data.data);
+          setTotalPages(result.data.totalPage);
+        }
+      } catch (error) {
+        if (!ignore) {
+          console.error("Lỗi khi fetch dữ liệu brands:", error);
+        }
+      } finally {
+        if (!ignore) {
+          setIsLoading(false);
+        }
       }
-    } catch (error) {
-      console.error("Lỗi khi fetch dữ liệu brands:", error);
-    } finally {
-      setIsLoading(false);
-    }
+    }, 400); // Debounce 400ms khi gõ tìm kiếm
+
+    return () => {
+      ignore = true;
+      clearTimeout(timer);
+    };
+  }, [page, keyword, refreshToken]);
+
+  // Đổi từ khóa tìm kiếm -> reset trang về 1
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setkeyword(e.target.value);
+    setPage(1);
   };
 
-  // 2. useEffect chỉ làm nhiệm vụ tự động gọi lại hàm mỗi khi biến 'page' thay đổi
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    fetchBrands();
-  }, [page]);
-
-  // Số dòng trống cần thêm để bảng luôn cao đúng 6 dòng (tránh khung bị co giãn)
   const emptyRowsCount = Math.max(0, ROWS_PER_PAGE - brands.length);
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
 
   return (
     <div className="space-y-4">
       <SectionHeader
         title="Thương hiệu"
         description="Quản lý các hãng điện thoại được bán tại cửa hàng"
-        onAdd={() => setIsCreateOpen(true)} // Mở Dialog khi click nút
+        onAdd={() => setIsCreateOpen(true)}
         addLabel="Thêm thương hiệu"
       />
 
       <CreateBrandDialog
         open={isCreateOpen}
         onOpenChange={setIsCreateOpen}
-        onSuccess={fetchBrands} // Refresh lại danh sách Table sau khi thêm thành công
+        onSuccess={refetch}
       />
 
-      <SearchBar placeholder="Tìm kiếm thương hiệu..." />
+      {/* Thanh tìm kiếm */}
+      <SearchBar
+        placeholder="Tìm kiếm thương hiệu theo tên..."
+        value={keyword}
+        onChange={handleSearchChange}
+      />
 
-      {/* Khung cố định: bảng luôn hiển thị đúng 6 dòng, pagination neo góc phải dưới */}
       <div
         className={`${cardWrap} flex flex-col justify-between overflow-hidden rounded-xl border border-slate-100 shadow-sm bg-white`}
       >
@@ -142,7 +176,9 @@ export function BrandsSection() {
               ) : brands.length === 0 ? (
                 <tr style={{ height: ROW_HEIGHT * ROWS_PER_PAGE }}>
                   <td colSpan={6} className="text-center text-slate-400 py-8">
-                    Không tìm thấy thương hiệu nào.
+                    {keyword
+                      ? `Không tìm thấy thương hiệu nào khớp với "${keyword}".`
+                      : "Không có thương hiệu nào."}
                   </td>
                 </tr>
               ) : (
@@ -162,8 +198,8 @@ export function BrandsSection() {
                             <CldImage
                               src={brand.logo}
                               alt={brand.name}
-                              width={32} // Chỉnh width bằng kích thước hiển thị thực tế w-8 (32px)
-                              height={32} // Chỉnh height bằng kích thước hiển thị thực tế h-8 (32px)
+                              width={32}
+                              height={32}
                               crop="pad"
                               className="w-8 h-8 rounded-lg object-contain bg-slate-50 border border-slate-100 p-0.5"
                               onError={(e) => {
@@ -198,24 +234,20 @@ export function BrandsSection() {
                       </td>
                       <td className={`${td} text-right px-4 py-2`}>
                         <div className="flex items-center justify-end gap-1.5">
-                          {/* Chức năng cập nhật brand*/}
                           <UpdateBrandDialog
                             brand={brand}
-                            onSuccess={fetchBrands} // Hàm load lại data của bạn sau khi update thành công
+                            onSuccess={refetch}
                           />
-
-                          {/* Chức năng xóa brand*/}
                           <DeleteBrandDialog
                             slug={brand.slug}
                             brandName={brand.name}
-                            onDeleted={fetchBrands}
+                            onDeleted={refetch}
                           />
                         </div>
                       </td>
                     </tr>
                   ))}
 
-                  {/* Dòng trống để giữ khung luôn đúng 6 dòng, không bị co lại */}
                   {Array.from({ length: emptyRowsCount }).map((_, i) => (
                     <tr
                       key={`empty-${i}`}
@@ -233,7 +265,7 @@ export function BrandsSection() {
           </table>
         </div>
 
-        {/* Pagination cố định góc phải dưới của khung */}
+        {/* Phân trang */}
         <div className="flex justify-end items-center px-4 py-3 border-t border-slate-100 bg-slate-50/30 min-h-[52px]">
           {totalPages > 1 ? (
             <Pagination className="mx-0 w-auto">

@@ -16,13 +16,35 @@ export const brandRepository = {
   findMany: async ({
     page = 1,
     limit = 10,
+    keyword,
   }: FindManyParams): Promise<FindManyResultBrands> => {
     const skip = (page - 1) * limit;
 
     // Dùng $transaction để chạy 2 query cùng lúc, tránh race condition
     const [brands, total] = await prisma.$transaction([
-      prisma.brands.findMany({ skip, take: limit, orderBy: { id: "asc" } }),
-      prisma.brands.count(),
+      prisma.brands.findMany({
+        where: keyword
+          ? {
+              name: {
+                contains: keyword,
+                mode: "insensitive",
+              },
+            }
+          : undefined,
+        skip,
+        take: limit,
+        orderBy: { id: "asc" },
+      }),
+      prisma.brands.count({
+        where: keyword
+          ? {
+              name: {
+                contains: keyword,
+                mode: "insensitive",
+              },
+            }
+          : undefined,
+      }),
     ]);
 
     return { brands, total };

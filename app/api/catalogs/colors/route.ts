@@ -7,14 +7,11 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
 
-    // Đảm bảo page và limit luôn là số dương hợp lệ
-    const page = Math.max(1, Number(searchParams.get("page") || 1));
-    const limit = Math.max(
-      1,
-      Math.min(100, Number(searchParams.get("limit") || 10)),
-    ); // Giới hạn max 100 item để tránh bị ddos kéo sập db
+    const page = Number(searchParams.get("page") || 1);
+    const limit = Number(searchParams.get("limit") || 10);
+    const keyword = searchParams.get("keyword") || undefined;
 
-    const result = await colorService.getColor({ page, limit });
+    const result = await colorService.getColor({ page, limit, keyword });
 
     return NextResponse.json<ApiResponse<PaginationResult<colors>>>({
       success: true,

@@ -18,19 +18,41 @@ export const colorRepository = {
   findMany: async ({
     page = 1,
     limit = 10,
+    keyword,
   }: FindManyParams): Promise<FindManyResultColors> => {
     // Ép kiểu về Number để an toàn tuyệt đối đề phòng dữ liệu từ URL query đổ vào là String
     const safePage = Number(page) || 1;
     const safeLimit = Number(limit) || 10;
     const skip = (safePage - 1) * safeLimit;
+    const where = keyword
+      ? {
+          OR: [
+            {
+              name: {
+                contains: keyword,
+                mode: "insensitive" as const,
+              },
+            },
+            {
+              hex_code: {
+                contains: keyword,
+                mode: "insensitive" as const,
+              },
+            },
+          ],
+        }
+      : undefined;
 
     const [colors, total] = await prisma.$transaction([
       prisma.colors.findMany({
+        where,
         skip,
         take: safeLimit,
         orderBy: { id: "asc" },
       }),
-      prisma.colors.count(),
+      prisma.colors.count({
+        where,
+      }),
     ]);
 
     return { colors, total };

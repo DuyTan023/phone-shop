@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { BrandsSection } from "@/lib/components/ui/brands/brandsSelection";
+import { OverviewSection } from "@/lib/components/ui/catalog/OverviewSection";
 import { ColorsSection } from "@/lib/components/ui/colors/colorsSelection";
 import {
   RamSelection,
@@ -13,7 +14,6 @@ import SpecGroupsSection from "@/lib/components/ui/spec_groups/SpecGroupsSection
 import { SpecKeysSection } from "@/lib/components/ui/spec_keys/spec_keys_Selection";
 import {
   Building2,
-  ChevronRight,
   Cpu,
   HardDrive,
   LayoutGrid,
@@ -79,58 +79,6 @@ const navGroups = [
 ];
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
-
-function StatsBar() {
-  const stats = [
-    {
-      label: "Thương hiệu",
-      value: 4,
-      icon: Building2,
-      color: "bg-blue-100 text-blue-600",
-    },
-    {
-      label: "Màu sắc",
-      value: 5,
-      icon: Palette,
-      color: "bg-orange-100 text-orange-600",
-    },
-    {
-      label: "Thông số",
-      value: 8,
-      icon: Cpu,
-      color: "bg-purple-100 text-purple-600",
-    },
-  ];
-
-  return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-      {stats.map((item) => {
-        const Icon = item.icon;
-        return (
-          <div
-            key={item.label}
-            className="bg-white border border-slate-200 rounded-xl p-4 hover:shadow-md transition-all"
-          >
-            <div className="flex justify-between items-start">
-              <div>
-                <p className="text-xs text-slate-500">{item.label}</p>
-                <h2 className="text-2xl font-bold mt-1">{item.value}</h2>
-                <span className="text-xs text-green-600 mt-0.5 block">
-                  +12% tháng này
-                </span>
-              </div>
-              <div
-                className={`w-10 h-10 rounded-lg flex items-center justify-center ${item.color}`}
-              >
-                <Icon size={18} />
-              </div>
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
 
 export function SectionHeader({
   title,
@@ -199,99 +147,6 @@ export function ActionButtons() {
       <button className="p-1.5 rounded-md text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors">
         <Trash2 size={13} />
       </button>
-    </div>
-  );
-}
-
-function OverviewSection({ setSection }: { setSection: (s: Section) => void }) {
-  const quickLinks = [
-    {
-      key: "brands" as Section,
-      label: "Quản lý thương hiệu",
-      icon: Building2,
-      count: "4 hãng",
-      color: "text-blue-500 bg-blue-50",
-    },
-    {
-      key: "series" as Section,
-      label: "Dòng sản phẩm",
-      icon: Tag,
-      count: "4 loại",
-      color: "text-purple-500 bg-purple-50",
-    },
-    {
-      key: "colors" as Section,
-      label: "Màu sắc",
-      icon: Palette,
-      count: "5 màu",
-      color: "text-pink-500 bg-pink-50",
-    },
-    {
-      key: "storages" as Section,
-      label: "Bộ nhớ ROM",
-      icon: HardDrive,
-      count: "5 tùy chọn",
-      color: "text-orange-500 bg-orange-50",
-    },
-    {
-      key: "spec_groups" as Section,
-      label: "Nhóm thông số",
-      icon: Settings2,
-      count: "5 nhóm",
-      color: "text-teal-500 bg-teal-50",
-    },
-    {
-      key: "spec_keys" as Section,
-      label: "Tên thông số",
-      icon: Cpu,
-      count: "8 thông số",
-      color: "text-cyan-500 bg-cyan-50",
-    },
-  ];
-
-  return (
-    <div>
-      <div className="mb-6">
-        <h1 className="text-xl font-bold text-slate-900">
-          Quản lý dữ liệu danh mục
-        </h1>
-        <p className="text-slate-400 mt-1 text-sm">
-          Trung tâm quản lý thương hiệu, biến thể và thông số kỹ thuật sản phẩm
-        </p>
-      </div>
-
-      <StatsBar />
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-        {quickLinks.map((item) => {
-          const Icon = item.icon;
-          return (
-            <button
-              key={item.key}
-              onClick={() => setSection(item.key)}
-              className="bg-white border border-slate-200 rounded-xl p-4 text-left hover:shadow-md hover:-translate-y-0.5 transition-all"
-            >
-              <div className="flex items-start justify-between mb-3">
-                <div
-                  className={`w-10 h-10 rounded-lg flex items-center justify-center ${item.color}`}
-                >
-                  <Icon size={18} />
-                </div>
-                <ChevronRight size={16} className="text-slate-300 mt-1" />
-              </div>
-              <h3 className="font-medium text-slate-800 text-sm">
-                {item.label}
-              </h3>
-              <p className="text-slate-400 text-xs mt-1">{item.count}</p>
-              <div className="mt-3 pt-3 border-t border-slate-100">
-                <span className="text-blue-500 text-xs font-medium">
-                  Truy cập →
-                </span>
-              </div>
-            </button>
-          );
-        })}
-      </div>
     </div>
   );
 }
