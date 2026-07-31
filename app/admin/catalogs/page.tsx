@@ -12,19 +12,8 @@ import { SeriesSection } from "@/lib/components/ui/series/SeriesSelection";
 import SpecGroupsSection from "@/lib/components/ui/spec_groups/SpecGroupsSection";
 
 import { SpecKeysSection } from "@/lib/components/ui/spec_keys/spec_keys_Selection";
-import {
-  Building2,
-  Cpu,
-  HardDrive,
-  LayoutGrid,
-  Palette,
-  Pencil,
-  Plus,
-  Search,
-  Settings2,
-  Tag,
-  Trash2,
-} from "lucide-react";
+import { UnitsSection } from "@/lib/components/ui/units/unitsSelection";
+import { Pencil, Plus, Search, Trash2 } from "lucide-react";
 import { useState } from "react";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -36,47 +25,10 @@ type Section =
   | "colors"
   | "storages"
   | "spec_groups"
-  | "spec_keys";
+  | "spec_keys"
+  | "units";
 
 // ─── Sidebar nav items ────────────────────────────────────────────────────────
-
-const navGroups = [
-  {
-    label: "Tổng quan",
-    items: [
-      { key: "overview" as Section, label: "Dashboard", icon: LayoutGrid },
-    ],
-  },
-  {
-    label: "Danh mục & Thương hiệu",
-    items: [
-      { key: "brands" as Section, label: "Thương hiệu", icon: Building2 },
-      { key: "series" as Section, label: "Phân loại sản phẩm", icon: Tag },
-    ],
-  },
-  {
-    label: "Thuộc tính thể sản phẩm",
-    items: [
-      { key: "colors" as Section, label: "Màu sắc", icon: Palette },
-      {
-        key: "storages" as Section,
-        label: "Bộ nhớ ROM & RAM",
-        icon: HardDrive,
-      },
-    ],
-  },
-  {
-    label: "Thông số kỹ thuật",
-    items: [
-      {
-        key: "spec_groups" as Section,
-        label: "Nhóm thông số",
-        icon: Settings2,
-      },
-      { key: "spec_keys" as Section, label: "Tên thông số", icon: Cpu },
-    ],
-  },
-];
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
@@ -168,6 +120,7 @@ function CatalogTabs({
     { key: "storages", label: "ROM & RAM" },
     { key: "spec_groups", label: "Nhóm thông số" },
     { key: "spec_keys", label: "Tên thông số" },
+    { key: "units", label: "Đơn vị thông số" },
   ];
 
   return (
@@ -219,6 +172,8 @@ export default function CatalogDashboardPage() {
         return <SpecGroupsSection />;
       case "spec_keys":
         return <SpecKeysSection />;
+      case "units":
+        return <UnitsSection />;
     }
   };
 

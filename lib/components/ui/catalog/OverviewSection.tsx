@@ -16,7 +16,8 @@ export type Section =
   | "colors"
   | "storages_ram"
   | "spec_groups"
-  | "spec_keys";
+  | "spec_keys"
+  | "units";
 
 export interface OverviewSectionProps {
   setSection: (section: Section) => void;
@@ -30,6 +31,7 @@ export function OverviewSection({ setSection }: OverviewSectionProps) {
     storages_ram: null,
     spec_groups: null,
     spec_keys: null,
+    units: null,
   });
 
   const [loading, setLoading] = useState<boolean>(true);
@@ -87,6 +89,7 @@ export function OverviewSection({ setSection }: OverviewSectionProps) {
           ramsCount,
           specGroupsCount,
           specKeysCount,
+          unitsCount,
         ] = await Promise.all([
           fetchTotalCount("/api/catalogs/brands"),
           fetchTotalCount("/api/catalogs/series"),
@@ -95,6 +98,7 @@ export function OverviewSection({ setSection }: OverviewSectionProps) {
           fetchListLength("/api/catalogs/rams"), // API RAM (Cập nhật đường dẫn nếu backend khác)
           fetchListLength("/api/catalogs/spec_groups"), // API Spec Groups
           fetchTotalCount("/api/catalogs/spec_keys"),
+          fetchTotalCount("/api/catalogs/units"),
         ]);
 
         setCounts({
@@ -104,6 +108,7 @@ export function OverviewSection({ setSection }: OverviewSectionProps) {
           storages_ram: storagesCount + ramsCount, // Cộng gộp tổng ROM + RAM
           spec_groups: specGroupsCount,
           spec_keys: specKeysCount,
+          units: unitsCount,
         });
       } catch (error) {
         console.error("Lỗi khi tải tổng số lượng danh mục:", error);
@@ -156,6 +161,13 @@ export function OverviewSection({ setSection }: OverviewSectionProps) {
       label: "Tên thông số",
       icon: Cpu,
       unit: "thông số",
+      color: "text-cyan-500 bg-cyan-50",
+    },
+    {
+      key: "units" as Section,
+      label: "Đơn vị thông số ",
+      icon: Cpu,
+      unit: "Đơn vị",
       color: "text-cyan-500 bg-cyan-50",
     },
   ];

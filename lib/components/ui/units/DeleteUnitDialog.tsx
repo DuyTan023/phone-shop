@@ -13,19 +13,19 @@ import type { ApiResponse } from "@/lib/types/public/types";
 import { Loader2, Trash2 } from "lucide-react";
 import { useState, useTransition } from "react";
 
-const API_URL = "/api/catalogs/spec_keys";
+const API_URL = "/api/catalogs/units";
 
-interface DeleteSpecKeyDialogProps {
+interface DeleteUnitDialogProps {
   id: number;
   name: string;
   onDeleted: () => void;
 }
 
-export function DeleteSpecKeyDialog({
+export function DeleteUnitDialog({
   id,
   name,
   onDeleted,
-}: DeleteSpecKeyDialogProps) {
+}: DeleteUnitDialogProps) {
   const [open, setOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -90,7 +90,7 @@ export function DeleteSpecKeyDialog({
         <DialogDescription asChild className="text-xs text-slate-600 space-y-3">
           <div>
             <p>
-              Bạn có chắc chắn muốn xóa thông số{" "}
+              Bạn có chắc chắn muốn xóa đơn vị{" "}
               <strong className="text-slate-800">&quot;{name}&quot;</strong>{" "}
               (ID: #{id}) không?
             </p>

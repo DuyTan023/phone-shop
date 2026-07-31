@@ -38,10 +38,13 @@ model product_specs {
   product_id  Int
   spec_key_id Int
   spec_value  String
+  unit_id     Int
+  id          Int       @id @default(autoincrement())
   spec_keys   spec_keys @relation(fields: [spec_key_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_spec_key")
   products    products  @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_spec_product")
+  units       units     @relation(fields: [unit_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
-  @@id([product_id, spec_key_id])
+  @@unique([product_id, spec_value])
 }
 
 model product_variants {
@@ -117,4 +120,11 @@ model series {
   brands       brands     @relation(fields: [brand_id], references: [id], map: "fk_series_brand")
 
   @@unique([brand_id, name], map: "uq_series_brand_name")
+}
+
+model units {
+  id            Int             @id @default(autoincrement())
+  name          String          @unique @db.VarChar(255)
+  symbol        String          @unique @db.VarChar(255)
+  product_specs product_specs[]
 }
