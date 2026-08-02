@@ -24,6 +24,7 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
+import { Toaster } from "@/components/ui/sonner";
 import {
   BarChart3,
   Bell,
@@ -333,6 +334,7 @@ export default function AdminLayout({
         {/* Main content */}
         <main className="flex-1 w-full min-w-0 overflow-x-hidden px-6 py-5">
           {children}
+          <Toaster richColors position="bottom-right" closeButton />
         </main>
       </SidebarInset>
     </SidebarProvider>

@@ -39,7 +39,7 @@ export async function PUT(req: NextRequest, { params }: routeContext) {
     const body = await req.json();
     const serie = await productService.updateProduct(numId, body);
     return NextResponse.json<ApiResponse<products>>(
-      { success: true, message: "Cập nhật serie thành công", data: serie },
+      { success: true, message: "Cập nhật Sản phẩm thành công", data: serie },
       { status: 200 },
     );
   } catch (err) {

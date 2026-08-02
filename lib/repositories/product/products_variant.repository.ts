@@ -96,6 +96,16 @@ export const productVariantRepository = {
       include: productVariantInclude,
     });
   },
+
+  findByProductId: async (product_id: number): Promise<ProductVariant[]> => {
+    return prisma.product_variants.findMany({
+      where: { product_id: product_id },
+      include: productVariantInclude,
+      orderBy: {
+        id: "asc",
+      },
+    });
+  },
   create: async (
     input: CreateProductVariantInput,
   ): Promise<product_variants> => {

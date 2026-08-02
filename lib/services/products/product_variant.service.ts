@@ -51,6 +51,20 @@ export const productVariantService = {
     }
   },
 
+  getProductVariantByProductId: async (
+    product_id: number,
+  ): Promise<ProductVariant[]> => {
+    try {
+      const product_variants =
+        await productVariantRepository.findByProductId(product_id);
+      if (!product_variants) throw new Error("NOT_FOUND");
+      return product_variants;
+    } catch (err) {
+      if (err instanceof Error && err.message === "NOT_FOUND") throw err;
+      throw new Error("SERVER_ERROR");
+    }
+  },
+
   getProductVariantBySku: async (sku: string): Promise<ProductVariant> => {
     try {
       const product_variant = await productVariantRepository.findBySku(sku);

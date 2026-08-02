@@ -47,6 +47,12 @@ export const productRepository = {
               brands: true, // Lấy luôn thông tin hãng thông qua series
             },
           },
+          _count: {
+            select: {
+              product_variants: true, // Số lượng biến thể
+              product_specs: true, // Số lượng thông số
+            },
+          },
         },
       }),
       prisma.products.count({
@@ -70,6 +76,12 @@ export const productRepository = {
         series: {
           include: {
             brands: true, // Lấy luôn thông tin hãng thông qua series
+          },
+        },
+        _count: {
+          select: {
+            product_variants: true, // Số lượng biến thể
+            product_specs: true, // Số lượng thông số
           },
         },
       },
