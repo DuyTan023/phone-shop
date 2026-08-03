@@ -49,6 +49,15 @@ const productVariantInclude = {
   rams: true,
 } satisfies Prisma.product_variantsInclude;
 
+//Định nghĩa kiểu Filter
+
+export type ProductVariantFilter = {
+  sku?: string;
+  color_id?: number;
+  ram_id?: number;
+  storage_id?: number;
+};
+
 const buildProductVariantWhere = (keyword?: string) => {
   if (!keyword) return undefined;
 
@@ -60,6 +69,38 @@ const buildProductVariantWhere = (keyword?: string) => {
       },
     },
   } satisfies Prisma.product_variantsWhereInput;
+};
+
+const buildVariantWhere = (
+  productId: number,
+  filters?: ProductVariantFilter,
+): Prisma.product_variantsWhereInput => {
+  const where: Prisma.product_variantsWhereInput = {
+    product_id: productId,
+  };
+
+  if (!filters) return where;
+
+  if (filters.sku?.trim()) {
+    where.sku = {
+      contains: filters.sku.trim(),
+      mode: "insensitive",
+    };
+  }
+
+  if (filters.color_id) {
+    where.color_id = filters.color_id;
+  }
+
+  if (filters.ram_id) {
+    where.ram_id = filters.ram_id;
+  }
+
+  if (filters.storage_id) {
+    where.storage_id = filters.storage_id;
+  }
+
+  return where;
 };
 
 export const productVariantRepository = {
@@ -97,15 +138,21 @@ export const productVariantRepository = {
     });
   },
 
-  findByProductId: async (product_id: number): Promise<ProductVariant[]> => {
+  findByProductId: async (
+    productId: number,
+    filters?: ProductVariantFilter,
+  ): Promise<ProductVariant[]> => {
+    const where = buildVariantWhere(productId, filters);
+
     return prisma.product_variants.findMany({
-      where: { product_id: product_id },
+      where,
       include: productVariantInclude,
       orderBy: {
         id: "asc",
       },
     });
   },
+
   create: async (
     input: CreateProductVariantInput,
   ): Promise<product_variants> => {

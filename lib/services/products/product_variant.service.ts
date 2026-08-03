@@ -8,6 +8,7 @@ import { PrismaClientKnownRequestError } from "@prisma/client/runtime/client";
 import {
   ProductVariant,
   productVariantRepository,
+  type ProductVariantFilter,
 } from "./../../repositories/product/products_variant.repository";
 type GetProductVariantParams = {
   page?: number;
@@ -53,14 +54,14 @@ export const productVariantService = {
 
   getProductVariantByProductId: async (
     product_id: number,
+    filters?: ProductVariantFilter,
   ): Promise<ProductVariant[]> => {
     try {
-      const product_variants =
-        await productVariantRepository.findByProductId(product_id);
-      if (!product_variants) throw new Error("NOT_FOUND");
-      return product_variants;
-    } catch (err) {
-      if (err instanceof Error && err.message === "NOT_FOUND") throw err;
+      return await productVariantRepository.findByProductId(
+        product_id,
+        filters,
+      );
+    } catch {
       throw new Error("SERVER_ERROR");
     }
   },
