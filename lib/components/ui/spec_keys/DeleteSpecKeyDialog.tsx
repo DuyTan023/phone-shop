@@ -30,7 +30,7 @@ export function DeleteSpecKeyDialog({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  // Reset error state khi dialog đóng/mở (State-during-render pattern)
+  // Reset error state khi dialog đóng/mở
   const [prevOpen, setPrevOpen] = useState(open);
   if (open !== prevOpen) {
     setPrevOpen(open);
@@ -60,15 +60,17 @@ export function DeleteSpecKeyDialog({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="p-1.5 rounded-md text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors inline-flex items-center justify-center"
-        >
-          <Trash2 className="h-4 w-4" />
-        </Button>
-      </DialogTrigger>
+      <DialogTrigger
+        render={
+          <Button
+            variant="ghost"
+            size="icon"
+            className="p-1.5 rounded-md text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors inline-flex items-center justify-center"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        }
+      />
 
       <DialogContent className="sm:max-w-[400px] bg-white border border-slate-100 p-5 gap-4">
         <DialogHeader className="space-y-1">
@@ -80,28 +82,29 @@ export function DeleteSpecKeyDialog({
               <DialogTitle className="font-semibold text-slate-800 text-sm">
                 Xác nhận xóa
               </DialogTitle>
-              <p className="text-xs text-slate-500">
+              <DialogDescription
+                render={<div />}
+                className="text-xs text-slate-500"
+              >
                 Hành động này không thể hoàn tác.
-              </p>
+              </DialogDescription>
             </div>
           </div>
         </DialogHeader>
 
-        <DialogDescription asChild className="text-xs text-slate-600 space-y-3">
-          <div>
-            <p>
-              Bạn có chắc chắn muốn xóa thông số{" "}
-              <strong className="text-slate-800">&quot;{name}&quot;</strong>{" "}
-              (ID: #{id}) không?
-            </p>
+        <div className="text-xs text-slate-600 space-y-3">
+          <p>
+            Bạn có chắc chắn muốn xóa thông số{" "}
+            <strong className="text-slate-800">&quot;{name}&quot;</strong> (ID:
+            #{id}) không?
+          </p>
 
-            {errorMessage && (
-              <div className="p-2.5 text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg">
-                {errorMessage}
-              </div>
-            )}
-          </div>
-        </DialogDescription>
+          {errorMessage && (
+            <div className="p-2.5 text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg">
+              {errorMessage}
+            </div>
+          )}
+        </div>
 
         <div className="flex items-center justify-end gap-2 pt-1">
           <Button

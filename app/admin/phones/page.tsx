@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+
 import {
   Pagination,
   PaginationContent,
@@ -31,6 +32,7 @@ import {
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -387,44 +389,54 @@ export default function ProductListPage() {
                           </TableCell>
 
                           {/* 8. Thao tác */}
+                          {/* 8. Thao tác */}
                           <TableCell className="text-right pr-4 py-2">
                             <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg"
-                                >
-                                  <MoreHorizontal className="w-4 h-4" />
-                                  <span className="sr-only">Menu thao tác</span>
-                                </Button>
-                              </DropdownMenuTrigger>
+                              <DropdownMenuTrigger
+                                render={
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg"
+                                  >
+                                    <MoreHorizontal className="w-4 h-4" />
+                                    <span className="sr-only">
+                                      Menu thao tác
+                                    </span>
+                                  </Button>
+                                }
+                              />
 
                               <DropdownMenuContent
                                 align="end"
                                 className="w-[160px] text-xs bg-slate-50"
                               >
-                                <DropdownMenuLabel className="text-[11px] text-slate-400 font-normal">
-                                  Thao tác
-                                </DropdownMenuLabel>
+                                {/* Bọc DropdownMenuGroup ở đây */}
+                                <DropdownMenuGroup>
+                                  <DropdownMenuLabel className="text-[11px] text-slate-400 font-normal">
+                                    Thao tác
+                                  </DropdownMenuLabel>
+                                </DropdownMenuGroup>
 
                                 <DropdownMenuSeparator />
 
-                                <DropdownMenuItem asChild>
-                                  <Link
-                                    href={`/admin/phones/${product.id}`}
-                                    className="cursor-pointer flex items-center"
-                                  >
-                                    <Eye className="w-3.5 h-3.5 mr-2 text-slate-500" />{" "}
-                                    Xem chi tiết
-                                  </Link>
-                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  render={
+                                    <Link
+                                      href={`/admin/phones/${product.id}`}
+                                      className="cursor-pointer flex items-center"
+                                    >
+                                      <Eye className="w-3.5 h-3.5 mr-2 text-slate-500" />
+                                      Xem chi tiết
+                                    </Link>
+                                  }
+                                />
 
                                 <DropdownMenuItem
                                   className="cursor-pointer flex items-center"
                                   onClick={() => setEditingProduct(product)}
                                 >
-                                  <Pencil className="w-3.5 h-3.5 mr-2 text-slate-500" />{" "}
+                                  <Pencil className="w-3.5 h-3.5 mr-2 text-slate-500" />
                                   Chỉnh sửa
                                 </DropdownMenuItem>
 

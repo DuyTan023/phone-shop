@@ -61,14 +61,16 @@ export function DeleteBrandDialog({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="p-1.5 rounded-md text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors inline-flex items-center justify-center"
-        >
-          <Trash2 className="h-4 w-4" />
-        </Button>
+      <DialogTrigger
+        render={
+          <Button
+            variant="ghost"
+            size="icon"
+            className="p-1.5 rounded-md text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors inline-flex items-center justify-center"
+          />
+        }
+      >
+        <Trash2 className="h-4 w-4" />
       </DialogTrigger>
 
       <DialogContent className="sm:max-w-[400px] bg-white border border-slate-100 p-5 gap-4">
@@ -88,7 +90,7 @@ export function DeleteBrandDialog({
           </div>
         </DialogHeader>
 
-        <DialogDescription asChild className="text-xs text-slate-600 space-y-3">
+        <DialogDescription className="text-xs text-slate-600 space-y-3">
           <div>
             <p>
               Bạn có chắc chắn muốn xóa thương hiệu{" "}
@@ -99,7 +101,7 @@ export function DeleteBrandDialog({
             </p>
 
             {errorMessage && (
-              <div className="p-2.5 text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg">
+              <div className="mt-2 p-2.5 text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg">
                 {errorMessage}
               </div>
             )}

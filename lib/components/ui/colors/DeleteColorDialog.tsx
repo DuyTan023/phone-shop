@@ -75,16 +75,18 @@ export function DeleteColorDialog({
 
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
-      <AlertDialogTrigger asChild>
-        <button
-          type="button"
-          className="p-1.5 rounded-md text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors inline-flex items-center justify-center"
-          title="Xóa màu"
-          disabled={loading}
-        >
-          <Trash2 className="h-4 w-4" />
-        </button>
-      </AlertDialogTrigger>
+      <AlertDialogTrigger
+        render={
+          <button
+            type="button"
+            className="p-1.5 rounded-md text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors inline-flex items-center justify-center disabled:opacity-50"
+            title="Xóa màu"
+            disabled={loading}
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
+        }
+      />
 
       <AlertDialogContent className="bg-white text-black max-w-[400px] rounded-lg">
         <AlertDialogHeader>

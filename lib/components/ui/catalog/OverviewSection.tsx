@@ -8,7 +8,7 @@ import {
   Settings2,
   Tag,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type Dispatch, type SetStateAction } from "react";
 
 export type Section =
   | "brands"
@@ -20,7 +20,7 @@ export type Section =
   | "units";
 
 export interface OverviewSectionProps {
-  setSection: (section: Section) => void;
+  setSection: Dispatch<SetStateAction<Section>> | ((section: Section) => void);
 }
 
 export function OverviewSection({ setSection }: OverviewSectionProps) {

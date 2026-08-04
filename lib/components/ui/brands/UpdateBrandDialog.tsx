@@ -88,16 +88,18 @@ export function UpdateBrandDialog({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="p-1.5 rounded-md text-blue-500 hover:bg-blue-50 hover:text-blue-600 transition-colors inline-flex items-center justify-center"
-          title="Cập nhật"
-        >
-          <Pencil className="h-4 w-4" />
-        </Button>
-      </DialogTrigger>
+      <DialogTrigger
+        render={
+          <Button
+            variant="ghost"
+            size="icon"
+            className="p-1.5 rounded-md text-blue-500 hover:bg-blue-50 hover:text-blue-600 transition-colors inline-flex items-center justify-center"
+            title="Cập nhật"
+          >
+            <Pencil className="h-4 w-4" />
+          </Button>
+        }
+      />
 
       <DialogContent className="sm:max-w-[440px] bg-white border border-slate-100 p-5 gap-4">
         <form onSubmit={handleSubmit} className="space-y-4">

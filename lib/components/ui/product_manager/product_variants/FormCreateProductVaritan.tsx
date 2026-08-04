@@ -29,8 +29,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import type { CreateProductVariantInput } from "@/lib/types/products/product_variant.type";
-
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 
 interface FormCreateProductVariantDialogProps {
   product_id: number;
@@ -65,13 +64,12 @@ export default function FormCreateProductVariantDialog({
     },
   });
 
-  // Đồng bộ lại product_id vào form nếu props thay đổi
   const selectedColor =
-    colorList?.find((s) => s?.id === form.watch("color_id")) ?? null;
+    colorList.find((s) => s?.id === form.watch("color_id")) ?? null;
   const selectedRam =
-    ramList?.find((s) => s?.id === form.watch("ram_id")) ?? null;
+    ramList.find((s) => s?.id === form.watch("ram_id")) ?? null;
   const selectedStorage =
-    storageList?.find((s) => s?.id === form.watch("storage_id")) ?? null;
+    storageList.find((s) => s?.id === form.watch("storage_id")) ?? null;
 
   const onSubmit = (data: CreateProductVariantInput) => {
     console.log("Dữ liệu form đã nhập:", data);
@@ -79,9 +77,7 @@ export default function FormCreateProductVariantDialog({
 
   return (
     <Dialog modal={false}>
-      <DialogTrigger asChild>
-        <Button variant="outline">Tạo biến thể</Button>
-      </DialogTrigger>
+      <DialogTrigger render={<Button variant="outline">Tạo biến thể</Button>} />
 
       <DialogContent className="sm:max-w-[650px] max-h-[90vh] overflow-y-auto bg-white">
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -93,23 +89,23 @@ export default function FormCreateProductVariantDialog({
           </DialogHeader>
 
           <div className="space-y-6 py-2">
-            {/* Nhóm Combobox (Thuộc tính) */}
+            {/* Nhóm Thuộc tính */}
             <div className="space-y-4">
               <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
                 Thuộc tính biến thể
               </h3>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {/* Combobox 1: Color */}
+                {/* Color */}
                 <div className="space-y-2">
                   <Label htmlFor="color">Màu sắc (Color)</Label>
                   <Combobox
-                    items={colorList ?? []}
+                    items={colorList}
                     value={selectedColor}
                     itemToStringValue={(s) => s.name}
                     itemToStringLabel={(s) => s.name}
                     onValueChange={(s) => {
-                      form.setValue("color_id", s!.id);
+                      form.setValue("color_id", s?.id ?? 0);
                     }}
                   >
                     <ComboboxInput placeholder="Chọn màu sắc..." />
@@ -126,15 +122,15 @@ export default function FormCreateProductVariantDialog({
                   </Combobox>
                 </div>
 
-                {/* Combobox 2: RAM */}
+                {/* RAM */}
                 <div className="space-y-2">
                   <Label htmlFor="ram">Dung lượng RAM</Label>
                   <Combobox
-                    items={ramList ?? []}
+                    items={ramList}
                     value={selectedRam}
                     itemToStringValue={(s) => s.value}
                     itemToStringLabel={(s) => s.value}
-                    onValueChange={(s: any) => form.setValue("ram_id", s?.id)}
+                    onValueChange={(s) => form.setValue("ram_id", s?.id ?? 0)}
                   >
                     <ComboboxInput placeholder="Chọn ram..." />
                     <ComboboxContent className="bg-white">
@@ -150,16 +146,16 @@ export default function FormCreateProductVariantDialog({
                   </Combobox>
                 </div>
 
-                {/* Combobox 3: Storage */}
+                {/* Storage */}
                 <div className="space-y-2">
                   <Label htmlFor="storage">Dung lượng ROM</Label>
                   <Combobox
-                    items={storageList ?? []}
+                    items={storageList}
                     value={selectedStorage}
                     itemToStringValue={(s) => s.value}
                     itemToStringLabel={(s) => s.value}
-                    onValueChange={(s: any) =>
-                      form.setValue("storage_id", s?.id)
+                    onValueChange={(s) =>
+                      form.setValue("storage_id", s?.id ?? 0)
                     }
                   >
                     <ComboboxInput placeholder="Chọn rom..." />
@@ -180,83 +176,99 @@ export default function FormCreateProductVariantDialog({
 
             <hr className="border-border" />
 
-            {/* Nhóm Input (Giá & Kho) */}
+            {/* Nhóm Giá & Kho */}
             <div className="space-y-4">
               <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
                 Giá & Tồn kho
               </h3>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {/* Input 1: Cost Price */}
                 <div className="space-y-2">
                   <Label htmlFor="cost_price">Giá nhập (Cost Price)</Label>
                   <Input
                     id="cost_price"
-                    {...form.register("cost_price")}
+                    type="number"
+                    {...form.register("cost_price", { valueAsNumber: true })}
                     className="border border-slate-700 focus:border-black focus-visible:ring-black"
                     placeholder="Nhập giá nhập..."
                   />
                 </div>
 
-                {/* Input 2: Price */}
                 <div className="space-y-2">
                   <Label htmlFor="price">Giá bán (Price)</Label>
                   <Input
                     id="price"
-                    {...form.register("price")}
+                    type="number"
+                    {...form.register("price", { valueAsNumber: true })}
                     className="border border-slate-700 focus:border-black focus-visible:ring-black"
                     placeholder="Nhập giá bán..."
                   />
                 </div>
-                {/* Input 3: Stock */}
+
                 <div className="space-y-2">
                   <Label htmlFor="stock">Số lượng kho (Stock)</Label>
                   <Input
                     id="stock"
-                    {...form.register("stock")}
+                    type="number"
+                    {...form.register("stock", { valueAsNumber: true })}
                     className="border border-slate-700 focus:border-black focus-visible:ring-black"
                     placeholder="Nhập tồn kho..."
                   />
                 </div>
               </div>
 
-              {/* Switch */}
+              {/* Nhóm Switch: Sử dụng Controller để điều khiển chuẩn state */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Status */}
-                <div className="flex items-center justify-between rounded-lg border p-3">
-                  <div className="space-y-0.5">
-                    <Label htmlFor="status">Trạng thái bán</Label>
-                    <p className="text-xs text-muted-foreground">
-                      Cho phép bán biến thể này
-                    </p>
-                  </div>
+                {/* Status Switch */}
+                {/* Status Switch */}
+                <Controller
+                  control={form.control}
+                  name="status"
+                  render={({ field }) => (
+                    <div className="flex items-center justify-between rounded-lg border p-3">
+                      <div className="space-y-0.5">
+                        <Label htmlFor="status" className="cursor-pointer">
+                          Trạng thái bán
+                        </Label>
+                        <p className="text-xs text-muted-foreground">
+                          Cho phép bán biến thể này
+                        </p>
+                      </div>
+                      <Switch
+                        id="status"
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        /* Đè class trực tiếp ở đây để hiện nút */
+                        className="h-6 w-11 border-2 border-transparent data-[checked]:bg-slate-900 data-[unchecked]:bg-slate-300 [&>[data-slot=switch-thumb]]:h-5 [&>[data-slot=switch-thumb]]:w-5 [&>[data-slot=switch-thumb]]:bg-white [&>[data-slot=switch-thumb]]:shadow-md [&>[data-slot=switch-thumb]]:data-[checked]:translate-x-5"
+                      />
+                    </div>
+                  )}
+                />
 
-                  <Switch
-                    id="status"
-                    checked={form.watch("status")}
-                    onCheckedChange={(checked) =>
-                      form.setValue("status", checked)
-                    }
-                  />
-                </div>
-
-                {/* Default */}
-                <div className="flex items-center justify-between rounded-lg border p-3">
-                  <div className="space-y-0.5">
-                    <Label htmlFor="is_default">Biến thể mặc định</Label>
-                    <p className="text-xs text-muted-foreground">
-                      Hiển thị mặc định khi mở sản phẩm
-                    </p>
-                  </div>
-
-                  <Switch
-                    id="is_default"
-                    // checked={form.watch("is_default")}
-                    // onCheckedChange={(checked) =>
-                    //   form.setValue("is_default", checked)
-                    // }
-                  />
-                </div>
+                {/* Is Default Switch */}
+                <Controller
+                  control={form.control}
+                  name="is_default"
+                  render={({ field }) => (
+                    <div className="flex items-center justify-between rounded-lg border p-3">
+                      <div className="space-y-0.5">
+                        <Label htmlFor="is_default" className="cursor-pointer">
+                          Biến thể mặc định
+                        </Label>
+                        <p className="text-xs text-muted-foreground">
+                          Hiển thị mặc định khi mở sản phẩm
+                        </p>
+                      </div>
+                      <Switch
+                        id="is_default"
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        /* Đè class trực tiếp ở đây để hiện nút */
+                        className="h-6 w-11 border-2 border-transparent data-[checked]:bg-slate-900 data-[unchecked]:bg-slate-300 [&>[data-slot=switch-thumb]]:h-5 [&>[data-slot=switch-thumb]]:w-5 [&>[data-slot=switch-thumb]]:bg-white [&>[data-slot=switch-thumb]]:shadow-md [&>[data-slot=switch-thumb]]:data-[checked]:translate-x-5"
+                      />
+                    </div>
+                  )}
+                />
               </div>
             </div>
           </div>
@@ -264,11 +276,13 @@ export default function FormCreateProductVariantDialog({
           <hr className="border-border" />
 
           <DialogFooter className="gap-2 sm:gap-0">
-            <DialogClose asChild>
-              <Button type="button" variant="outline">
-                Hủy
-              </Button>
-            </DialogClose>
+            <DialogClose
+              render={
+                <Button type="button" variant="outline">
+                  Hủy
+                </Button>
+              }
+            />
             <Button type="submit">Thêm mới</Button>
           </DialogFooter>
         </form>

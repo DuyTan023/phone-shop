@@ -46,12 +46,16 @@ function convertToSlug(text: string) {
     .replace(/^-+|-+$/g, "");
 }
 
-export function UpdateSerieDialog({
+// Inner Form Component - Khởi tạo state trực tiếp từ prop `serie` ngay khi mount
+function UpdateSerieForm({
   serie,
-  open,
-  onOpenChange,
+  onClose,
   onSuccess,
-}: UpdateSerieDialogProps) {
+}: {
+  serie: SerieWithBrand;
+  onClose: () => void;
+  onSuccess?: () => void | Promise<void>;
+}) {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -59,37 +63,20 @@ export function UpdateSerieDialog({
   const [brands, setBrands] = useState<BrandOption[]>([]);
   const [isLoadingBrands, setIsLoadingBrands] = useState(false);
 
-  // State các trường thông tin
-  const [name, setName] = useState("");
-  const [slug, setSlug] = useState("");
-  const [selectedBrandId, setSelectedBrandId] = useState<string>("");
-  const [releaseYear, setReleaseYear] = useState<number>(
-    new Date().getFullYear(),
+  // Khởi tạo State trực tiếp từ dữ liệu serie ban đầu
+  const [name, setName] = useState(serie.name || "");
+  const [slug, setSlug] = useState(serie.slug || "");
+  const [selectedBrandId, setSelectedBrandId] = useState<string>(
+    String(serie.brand_id || serie.brands?.id || ""),
   );
-  const [description, setDescription] = useState("");
-  const [isSlugEdited, setIsSlugEdited] = useState(false);
+  const [releaseYear, setReleaseYear] = useState<number>(
+    serie.release_year || new Date().getFullYear(),
+  );
+  const [description] = useState(serie.brands.description || "");
+  const [isSlugEdited, setIsSlugEdited] = useState(true);
 
-  // Sync dữ liệu ban đầu từ prop `serie`
-  const [prevIsOpen, setPrevIsOpen] = useState(open);
-  if (open !== prevIsOpen) {
-    setPrevIsOpen(open);
-    if (open && serie) {
-      setName(serie.name || "");
-      setSlug(serie.slug || "");
-      setSelectedBrandId(String(serie.brand_id || serie.brands?.id || ""));
-      setReleaseYear(serie.release_year || new Date().getFullYear());
-      setIsSlugEdited(true); // Giữ slug cũ, không tự sinh trừ khi người dùng tự xóa
-      setErrorMessage(null);
-    } else if (!open) {
-      setIsLoading(false);
-      setErrorMessage(null);
-    }
-  }
-
-  // Fetch danh sách thương hiệu khi mở Dialog
+  // Fetch danh sách thương hiệu khi Form mount
   useEffect(() => {
-    if (!open) return;
-
     let isMounted = true;
     async function fetchBrands() {
       try {
@@ -114,7 +101,7 @@ export function UpdateSerieDialog({
     return () => {
       isMounted = false;
     };
-  }, [open]);
+  }, []);
 
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const nameValue = e.target.value;
@@ -131,7 +118,7 @@ export function UpdateSerieDialog({
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!serie?.id) return;
+    if (!serie.id) return;
 
     setErrorMessage(null);
 
@@ -162,14 +149,14 @@ export function UpdateSerieDialog({
       const result = await response.json();
 
       if (response.ok && result.success) {
-        onOpenChange(false);
+        onClose();
         if (onSuccess) await onSuccess();
       } else {
         setErrorMessage(
           result.message || "Không thể cập nhật dòng sản phẩm này",
         );
       }
-    } catch (err) {
+    } catch {
       setErrorMessage("Lỗi kết nối hệ thống khi gửi yêu cầu cập nhật");
     } finally {
       setIsLoading(false);
@@ -177,158 +164,176 @@ export function UpdateSerieDialog({
   }
 
   return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <DialogHeader className="space-y-1">
+        <div className="flex items-center gap-3 mb-1">
+          <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center shrink-0 text-slate-700">
+            <Edit3 size={18} />
+          </div>
+          <div>
+            <DialogTitle className="font-semibold text-slate-800 text-sm">
+              Cập nhật dòng sản phẩm
+            </DialogTitle>
+            {/* Sử dụng render={<div />} chuẩn Base UI thay vì asChild */}
+            <DialogDescription
+              render={<div />}
+              className="text-xs text-slate-500"
+            >
+              Chỉnh sửa các thông tin chi tiết của dòng sản phẩm.
+            </DialogDescription>
+          </div>
+        </div>
+      </DialogHeader>
+
+      {/* Form Fields Container */}
+      <div className="space-y-3.5 pt-1">
+        {/* Field: Chọn Thương hiệu */}
+        <div className="space-y-1.5">
+          <Label className="text-xs font-medium text-slate-700">
+            Thương hiệu <span className="text-red-500">*</span>
+          </Label>
+          <Select
+            value={selectedBrandId}
+            onValueChange={(val) => setSelectedBrandId(val ?? "")}
+            disabled={isLoadingBrands || isLoading}
+          >
+            <SelectTrigger className="w-full h-9 px-3 text-xs border-slate-200 bg-white focus:ring-1 focus:ring-slate-400 focus:border-slate-400 rounded-lg shadow-sm">
+              <SelectValue placeholder="-- Chọn thương hiệu --" />
+            </SelectTrigger>
+
+            {/* Sửa SelectContent theo chuẩn Base UI (Bỏ position="popper" & biến Radix) */}
+            <SelectContent className="max-h-60 bg-white border border-slate-200 shadow-lg rounded-lg z-50 p-1">
+              {isLoadingBrands ? (
+                <div className="flex items-center justify-center p-3 text-xs text-slate-400 gap-2">
+                  <Loader2 size={14} className="animate-spin text-slate-500" />{" "}
+                  Đang tải thương hiệu...
+                </div>
+              ) : brands.length === 0 ? (
+                <div className="p-3 text-xs text-slate-400 text-center">
+                  Chưa có thương hiệu nào
+                </div>
+              ) : (
+                brands.map((brand) => (
+                  <SelectItem
+                    key={String(brand.id)}
+                    value={String(brand.id)}
+                    className="text-xs py-2 px-2.5 rounded-md focus:bg-slate-100 cursor-pointer text-slate-700"
+                  >
+                    {brand.name}
+                  </SelectItem>
+                ))
+              )}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Field: Tên Serie */}
+        <div className="space-y-1.5">
+          <Label
+            htmlFor="update-serie-name"
+            className="text-xs font-medium text-slate-700"
+          >
+            Tên Serie <span className="text-red-500">*</span>
+          </Label>
+          <Input
+            id="update-serie-name"
+            name="name"
+            value={name}
+            onChange={handleNameChange}
+            placeholder="Ví dụ: iPhone 15 Series, Galaxy S..."
+            required
+            className="h-9 text-xs border-slate-200 focus-visible:ring-slate-400 rounded-lg placeholder:text-slate-400"
+          />
+        </div>
+
+        {/* Field: Slug */}
+        <div className="space-y-1.5">
+          <Label
+            htmlFor="update-serie-slug"
+            className="text-xs font-medium text-slate-700"
+          >
+            Slug (Đường dẫn) <span className="text-red-500">*</span>
+          </Label>
+          <Input
+            id="update-serie-slug"
+            name="slug"
+            value={slug}
+            onChange={handleSlugChange}
+            placeholder="iphone-15-series"
+            required
+            className="h-9 text-xs border-slate-200 focus-visible:ring-slate-400 rounded-lg placeholder:text-slate-400"
+          />
+        </div>
+
+        {/* Field: Năm ra mắt */}
+        <div className="space-y-1.5">
+          <Label
+            htmlFor="update-serie-year"
+            className="text-xs font-medium text-slate-700"
+          >
+            Năm ra mắt <span className="text-red-500">*</span>
+          </Label>
+          <Input
+            id="update-serie-year"
+            type="number"
+            value={releaseYear}
+            onChange={(e) => setReleaseYear(Number(e.target.value))}
+            placeholder="Ví dụ: 2024"
+            required
+            className="h-9 text-xs border-slate-200 focus-visible:ring-slate-400 rounded-lg"
+          />
+        </div>
+
+        {/* Hiển thị thông báo lỗi */}
+        {errorMessage && (
+          <div className="p-2.5 text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg font-medium">
+            {errorMessage}
+          </div>
+        )}
+      </div>
+
+      {/* Actions */}
+      <div className="flex items-center justify-end gap-2 pt-3">
+        <Button
+          type="button"
+          variant="ghost"
+          onClick={onClose}
+          disabled={isLoading}
+          className="px-3.5 py-1.5 h-auto text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+        >
+          Hủy
+        </Button>
+        <Button
+          type="submit"
+          disabled={isLoading || isLoadingBrands}
+          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 h-auto text-xs font-medium text-white bg-slate-900 hover:bg-slate-800 rounded-lg disabled:opacity-50 transition-colors shadow-sm"
+        >
+          {isLoading && <Loader2 size={14} className="animate-spin" />}
+          {isLoading ? "Đang lưu..." : "Cập nhật"}
+        </Button>
+      </div>
+    </form>
+  );
+}
+
+// Outer Dialog Wrapper
+export function UpdateSerieDialog({
+  serie,
+  open,
+  onOpenChange,
+  onSuccess,
+}: UpdateSerieDialogProps) {
+  return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[460px] bg-white border border-slate-100 p-6 gap-4 shadow-xl">
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <DialogHeader className="space-y-1">
-            <div className="flex items-center gap-3 mb-1">
-              <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center shrink-0 text-slate-700">
-                <Edit3 size={18} />
-              </div>
-              <div>
-                <DialogTitle className="font-semibold text-slate-800 text-sm">
-                  Cập nhật dòng sản phẩm
-                </DialogTitle>
-                <DialogDescription className="text-xs text-slate-500">
-                  Chỉnh sửa các thông tin chi tiết của dòng sản phẩm.
-                </DialogDescription>
-              </div>
-            </div>
-          </DialogHeader>
-
-          {/* Form Fields Container */}
-          <div className="space-y-3.5 pt-1">
-            {/* Field: Chọn Thương hiệu */}
-            <div className="space-y-1.5">
-              <Label className="text-xs font-medium text-slate-700">
-                Thương hiệu <span className="text-red-500">*</span>
-              </Label>
-              <Select
-                value={selectedBrandId}
-                onValueChange={setSelectedBrandId}
-                disabled={isLoadingBrands || isLoading}
-              >
-                <SelectTrigger className="w-full h-9 px-3 text-xs border-slate-200 bg-white focus:ring-1 focus:ring-slate-400 focus:border-slate-400 rounded-lg shadow-sm">
-                  <SelectValue placeholder="-- Chọn thương hiệu --" />
-                </SelectTrigger>
-                {/* Fix triệt để lỗi bị z-index đè và lệch layout */}
-                <SelectContent
-                  position="popper"
-                  className="w-[var(--radix-select-trigger-width)] max-h-60 bg-white border border-slate-200 shadow-lg rounded-lg z-50 p-1"
-                >
-                  {isLoadingBrands ? (
-                    <div className="flex items-center justify-center p-3 text-xs text-slate-400 gap-2">
-                      <Loader2
-                        size={14}
-                        className="animate-spin text-slate-500"
-                      />{" "}
-                      Đang tải thương hiệu...
-                    </div>
-                  ) : brands.length === 0 ? (
-                    <div className="p-3 text-xs text-slate-400 text-center">
-                      Chưa có thương hiệu nào
-                    </div>
-                  ) : (
-                    brands.map((brand) => (
-                      <SelectItem
-                        key={String(brand.id)}
-                        value={String(brand.id)}
-                        className="text-xs py-2 px-2.5 rounded-md focus:bg-slate-100 cursor-pointer text-slate-700"
-                      >
-                        {brand.name}
-                      </SelectItem>
-                    ))
-                  )}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Field: Tên Serie */}
-            <div className="space-y-1.5">
-              <Label
-                htmlFor="update-serie-name"
-                className="text-xs font-medium text-slate-700"
-              >
-                Tên Serie <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="update-serie-name"
-                name="name"
-                value={name}
-                onChange={handleNameChange}
-                placeholder="Ví dụ: iPhone 15 Series, Galaxy S..."
-                required
-                className="h-9 text-xs border-slate-200 focus-visible:ring-slate-400 rounded-lg placeholder:text-slate-400"
-              />
-            </div>
-
-            {/* Field: Slug */}
-            <div className="space-y-1.5">
-              <Label
-                htmlFor="update-serie-slug"
-                className="text-xs font-medium text-slate-700"
-              >
-                Slug (Đường dẫn) <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="update-serie-slug"
-                name="slug"
-                value={slug}
-                onChange={handleSlugChange}
-                placeholder="iphone-15-series"
-                required
-                className="h-9 text-xs border-slate-200 focus-visible:ring-slate-400 rounded-lg placeholder:text-slate-400"
-              />
-            </div>
-
-            {/* Field: Năm ra mắt */}
-            <div className="space-y-1.5">
-              <Label
-                htmlFor="update-serie-year"
-                className="text-xs font-medium text-slate-700"
-              >
-                Năm ra mắt <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="update-serie-year"
-                type="number"
-                value={releaseYear}
-                onChange={(e) => setReleaseYear(Number(e.target.value))}
-                placeholder="Ví dụ: 2024"
-                required
-                className="h-9 text-xs border-slate-200 focus-visible:ring-slate-400 rounded-lg"
-              />
-            </div>
-
-            {/* Hiển thị thông báo lỗi */}
-            {errorMessage && (
-              <div className="p-2.5 text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg font-medium">
-                {errorMessage}
-              </div>
-            )}
-          </div>
-
-          {/* Actions */}
-          <div className="flex items-center justify-end gap-2 pt-3">
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => onOpenChange(false)}
-              disabled={isLoading}
-              className="px-3.5 py-1.5 h-auto text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
-            >
-              Hủy
-            </Button>
-            <Button
-              type="submit"
-              disabled={isLoading || isLoadingBrands}
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 h-auto text-xs font-medium text-white bg-slate-900 hover:bg-slate-800 rounded-lg disabled:opacity-50 transition-colors shadow-sm"
-            >
-              {isLoading && <Loader2 size={14} className="animate-spin" />}
-              {isLoading ? "Đang lưu..." : "Cập nhật"}
-            </Button>
-          </div>
-        </form>
+        {open && serie && (
+          <UpdateSerieForm
+            key={serie.id}
+            serie={serie}
+            onClose={() => onOpenChange(false)}
+            onSuccess={onSuccess}
+          />
+        )}
       </DialogContent>
     </Dialog>
   );

@@ -23,7 +23,7 @@ type Section =
   | "brands"
   | "series"
   | "colors"
-  | "storages"
+  | "storages_ram"
   | "spec_groups"
   | "spec_keys"
   | "units";
@@ -117,7 +117,7 @@ function CatalogTabs({
     { key: "brands", label: "Thương hiệu" },
     { key: "series", label: "Series" },
     { key: "colors", label: "Màu sắc" },
-    { key: "storages", label: "ROM & RAM" },
+    { key: "storages_ram", label: "ROM & RAM" },
     { key: "spec_groups", label: "Nhóm thông số" },
     { key: "spec_keys", label: "Tên thông số" },
     { key: "units", label: "Đơn vị thông số" },
@@ -160,7 +160,7 @@ export default function CatalogDashboardPage() {
         return <SeriesSection />;
       case "colors":
         return <ColorsSection />;
-      case "storages":
+      case "storages_ram":
         return (
           <div>
             <RamSelection />

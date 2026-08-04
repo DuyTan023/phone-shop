@@ -72,16 +72,18 @@ export function DeleteProduct2Dialog({ id, name }: DeleteProductDialogProps) {
 
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
-      <AlertDialogTrigger asChild>
-        <button
-          type="button"
-          className="p-1.5 rounded-md text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors inline-flex items-center justify-center disabled:opacity-50"
-          title="Xóa sản phẩm"
-          disabled={loading}
-        >
-          <Trash2 className="h-4 w-4" />
-        </button>
-      </AlertDialogTrigger>
+      <AlertDialogTrigger
+        render={
+          <button
+            type="button"
+            className="p-1.5 rounded-md text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors inline-flex items-center justify-center disabled:opacity-50"
+            title="Xóa sản phẩm"
+            disabled={loading}
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
+        }
+      />
 
       <AlertDialogContent className="sm:max-w-[400px] bg-white border border-slate-100 p-5 gap-4 rounded-xl shadow-lg">
         {/* Header với Badged Icon Red */}
@@ -102,7 +104,9 @@ export function DeleteProduct2Dialog({ id, name }: DeleteProductDialogProps) {
         </AlertDialogHeader>
 
         {/* Nội dung chi tiết */}
-        <AlertDialogDescription asChild className="text-xs text-slate-600">
+        <AlertDialogDescription
+          render={<div className="text-xs text-slate-600" />}
+        >
           <div>
             <p className="leading-relaxed">
               Bạn có chắc chắn muốn xóa sản phẩm{" "}

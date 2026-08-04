@@ -29,8 +29,11 @@ export function UpdateUnitDialog({ unit, onSuccess }: UpdateUnitDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // Đồng bộ lại state từ unit mỗi khi dialog được mở
+  // Đồng bộ lại state từ unit mỗi khi dialog được mở/đóng
   const handleOpenChange = (newOpen: boolean) => {
+    // Không cho phép đóng Dialog nếu đang submit
+    if (!newOpen && isSubmitting) return;
+
     setOpen(newOpen);
     if (newOpen) {
       setName(unit.name);
@@ -75,20 +78,19 @@ export function UpdateUnitDialog({ unit, onSuccess }: UpdateUnitDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="p-1.5 rounded-md text-blue-500 hover:bg-blue-50 hover:text-blue-600 transition-colors inline-flex items-center justify-center"
-        >
-          <Pencil className="h-4 w-4" />
-        </Button>
-      </DialogTrigger>
+      <DialogTrigger
+        render={
+          <Button
+            variant="ghost"
+            size="icon"
+            className="p-1.5 rounded-md text-blue-500 hover:bg-blue-50 hover:text-blue-600 transition-colors inline-flex items-center justify-center"
+          >
+            <Pencil className="h-4 w-4" />
+          </Button>
+        }
+      />
 
-      <DialogContent
-        className="sm:max-w-[440px] bg-white border border-slate-100 p-5 gap-4"
-        onInteractOutside={(e) => isSubmitting && e.preventDefault()}
-      >
+      <DialogContent className="sm:max-w-[440px] bg-white border border-slate-100 p-5 gap-4">
         {/* Header Section với Icon Badge */}
         <DialogHeader className="space-y-1">
           <div className="flex items-center gap-3 mb-1">

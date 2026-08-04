@@ -73,20 +73,21 @@ export function DeleteDialog({
           </div>
         </DialogHeader>
 
-        <DialogDescription asChild className="text-xs text-slate-600 space-y-3">
-          <div>
-            <p>
-              Bạn có chắc chắn muốn xóa{" "}
-              <strong className="text-slate-800">&quot;{itemName}&quot;</strong>
-              {itemId !== undefined && ` (ID: #${itemId})`} không?
-            </p>
+        <DialogDescription
+          render={<div />}
+          className="text-xs text-slate-600 space-y-3"
+        >
+          <p>
+            Bạn có chắc chắn muốn xóa{" "}
+            <strong className="text-slate-800">&quot;{itemName}&quot;</strong>
+            {itemId !== undefined && ` (ID: #${itemId})`} không?
+          </p>
 
-            {errorMessage && (
-              <div className="p-2.5 text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg">
-                {errorMessage}
-              </div>
-            )}
-          </div>
+          {errorMessage && (
+            <div className="p-2.5 text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg">
+              {errorMessage}
+            </div>
+          )}
         </DialogDescription>
 
         <div className="flex items-center justify-end gap-2 pt-1">

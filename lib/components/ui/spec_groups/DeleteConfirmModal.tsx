@@ -81,7 +81,10 @@ export function DeleteConfirmModal({
           </div>
         </DialogHeader>
 
-        <DialogDescription asChild className="text-xs text-slate-600 space-y-3">
+        <DialogDescription
+          render={<div />}
+          className="text-xs text-slate-600 space-y-3"
+        >
           <div>
             <p>
               Bạn có chắc chắn muốn xóa nhóm thông số{" "}

@@ -60,17 +60,14 @@ export function ChipFormDialog({
   const [loading, setLoading] = useState(false);
 
   function handleOpenChange(newOpen: boolean) {
-    if (loading) return;
+    // Nếu đang loading, chặn mọi thao tác đóng (Escape, Backdrop click, Close button)
+    if (loading && !newOpen) return;
     onOpenChange(newOpen);
   }
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent
-        className="sm:max-w-[440px] bg-white border border-slate-100 p-5 gap-4"
-        onEscapeKeyDown={(e) => loading && e.preventDefault()}
-        onPointerDownOutside={(e) => loading && e.preventDefault()}
-      >
+      <DialogContent className="sm:max-w-[440px] bg-white border border-slate-100 p-5 gap-4">
         {open && (
           <ChipForm
             key={editingItem?.id ?? "new"}

@@ -25,6 +25,7 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { Toaster } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import {
   BarChart3,
   Bell,
@@ -137,7 +138,7 @@ const navMain: NavSection[] = [
   },
 ];
 
-function AdminSidebar() {
+export function AdminSidebar() {
   const pathname = usePathname();
 
   return (
@@ -176,7 +177,7 @@ function AdminSidebar() {
                   return (
                     <SidebarMenuItem key={item.title}>
                       <SidebarMenuButton
-                        asChild
+                        render={<Link href={item.href} />}
                         isActive={isActive}
                         className={`rounded-lg transition-colors ${
                           isActive
@@ -184,15 +185,10 @@ function AdminSidebar() {
                             : "text-slate-600 hover:bg-blue-50 hover:text-blue-700"
                         }`}
                       >
-                        <Link
-                          href={item.href}
-                          className="flex items-center gap-2.5"
-                        >
-                          <item.icon className="h-4 w-4 shrink-0" />
-                          <span className="text-sm font-medium">
-                            {item.title}
-                          </span>
-                        </Link>
+                        <item.icon className="h-4 w-4 shrink-0" />
+                        <span className="text-sm font-medium">
+                          {item.title}
+                        </span>
                       </SidebarMenuButton>
 
                       {item.badge && (
@@ -218,26 +214,28 @@ function AdminSidebar() {
       {/* Footer */}
       <SidebarFooter className="border-t border-slate-200 p-2">
         <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button className="flex w-full items-center gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-slate-100">
-              <Avatar className="h-8 w-8 shrink-0">
-                <AvatarImage src="/avatar.png" />
-                <AvatarFallback className="bg-blue-600 text-xs font-bold text-white">
-                  AD
-                </AvatarFallback>
-              </Avatar>
+          <DropdownMenuTrigger
+            render={
+              <button className="flex w-full items-center gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-slate-100" />
+            }
+          >
+            <Avatar className="h-8 w-8 shrink-0">
+              <AvatarImage src="/avatar.png" />
+              <AvatarFallback className="bg-blue-600 text-xs font-bold text-white">
+                AD
+              </AvatarFallback>
+            </Avatar>
 
-              <div className="flex-1 text-left truncate">
-                <p className="truncate text-xs font-semibold text-slate-800">
-                  Admin PhoneStore
-                </p>
-                <p className="truncate text-[10px] text-slate-500">
-                  admin@phonestore.vn
-                </p>
-              </div>
+            <div className="flex-1 text-left truncate">
+              <p className="truncate text-xs font-semibold text-slate-800">
+                Admin PhoneStore
+              </p>
+              <p className="truncate text-[10px] text-slate-500">
+                admin@phonestore.vn
+              </p>
+            </div>
 
-              <ChevronDown className="h-3.5 w-3.5 shrink-0 text-slate-400" />
-            </button>
+            <ChevronDown className="h-3.5 w-3.5 shrink-0 text-slate-400" />
           </DropdownMenuTrigger>
 
           <DropdownMenuContent align="end" className="w-48">
@@ -333,7 +331,7 @@ export default function AdminLayout({
 
         {/* Main content */}
         <main className="flex-1 w-full min-w-0 overflow-x-hidden px-6 py-5">
-          {children}
+          <TooltipProvider>{children}</TooltipProvider>
           <Toaster richColors position="bottom-right" closeButton />
         </main>
       </SidebarInset>
