@@ -36,8 +36,10 @@ import FormCreateProductVariantDialog from "./FormCreateProductVaritan";
 
 export default function TabProductVariantInfo({
   product_id,
+  name,
 }: {
   product_id: number;
+  name: string;
 }) {
   const [product_variants, setProductVariant] = useState<
     ProductVariant[] | null
@@ -192,7 +194,10 @@ export default function TabProductVariantInfo({
               </div>
               <FormCreateProductVariantDialog
                 product_id={product_id}
-                name="iPhone 16 pro"
+                name={name}
+                colors={colors || []}
+                rams={rams || []}
+                storages={storages || []}
               />
             </div>
 

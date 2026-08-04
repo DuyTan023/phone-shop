@@ -219,7 +219,7 @@ export default function PhoneDetailPage() {
           />
 
           {/* TAB 2: BIẾN THỂ SKUS */}
-          <TabProductVariantInfo product_id={product.id} />
+          <TabProductVariantInfo product_id={product.id} name={product.name} />
 
           {/* TAB 3: THÔNG SỐ KỸ THUẬT */}
           <TabsContent value="specs" className="m-0 focus-visible:outline-none">
