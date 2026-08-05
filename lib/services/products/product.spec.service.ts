@@ -50,15 +50,10 @@ export const productSpecService = {
     }
   },
 
-  getProductSpec: async (
-    product_id: number,
-    spec_key_id: number,
-  ): Promise<Product_Spec> => {
+  getProductSpec: async (product_id: number): Promise<Product_Spec> => {
     try {
-      const product_spec = await productSpecRepository.findByProductSpec(
-        product_id,
-        spec_key_id,
-      );
+      const product_spec =
+        await productSpecRepository.findByProductId(product_id);
       if (!product_spec) throw new Error("NOT_FOUND");
       return product_spec;
     } catch (err) {

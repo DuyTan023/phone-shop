@@ -8,6 +8,7 @@ import { PrismaClientKnownRequestError } from "@prisma/client/runtime/client";
 import {
   ProductVariant,
   productVariantRepository,
+  type FindManyResultProductVariant,
   type ProductVariantFilter,
 } from "./../../repositories/product/products_variant.repository";
 type GetProductVariantParams = {
@@ -53,11 +54,15 @@ export const productVariantService = {
   },
 
   getProductVariantByProductId: async (
+    page = 1,
+    limit = 10,
     product_id: number,
     filters?: ProductVariantFilter,
-  ): Promise<ProductVariant[]> => {
+  ): Promise<FindManyResultProductVariant> => {
     try {
       return await productVariantRepository.findByProductId(
+        page,
+        limit,
         product_id,
         filters,
       );
@@ -79,7 +84,10 @@ export const productVariantService = {
   createProductVariant: async (
     input: CreateProductVariantInput,
   ): Promise<product_variants> => {
-    if (input.price < 0 || (input.cost_price && input.cost_price < 0)) {
+    if (
+      input.price.lessThan(0) ||
+      (input.cost_price && input.cost_price.lessThan(0))
+    ) {
       throw new Error("INVALID_PRICE");
     }
     if (input.stock < 0) {
@@ -125,7 +133,7 @@ export const productVariantService = {
     input: UpdateProductVariantInput,
   ): Promise<product_variants> => {
     // Validate giá bán & tồn kho nếu có truyền vào
-    if (input.price !== undefined && input.price < 0) {
+    if (input.price !== undefined && input.price.lessThan(0)) {
       throw new Error("INVALID_PRICE");
     }
     if (input.stock !== undefined && input.stock < 0) {

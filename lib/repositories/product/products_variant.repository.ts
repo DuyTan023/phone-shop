@@ -139,18 +139,26 @@ export const productVariantRepository = {
   },
 
   findByProductId: async (
+    page = 1,
+    limit = 10,
     productId: number,
     filters?: ProductVariantFilter,
-  ): Promise<ProductVariant[]> => {
+  ): Promise<FindManyResultProductVariant> => {
+    const skip = (page - 1) * limit;
     const where = buildVariantWhere(productId, filters);
-
-    return prisma.product_variants.findMany({
-      where,
-      include: productVariantInclude,
-      orderBy: {
-        id: "asc",
-      },
-    });
+    const [product_variants, total] = await prisma.$transaction([
+      prisma.product_variants.findMany({
+        where,
+        include: productVariantInclude,
+        skip,
+        take: limit,
+        orderBy: { id: "asc" },
+      }),
+      prisma.product_variants.count({
+        where: where,
+      }),
+    ]);
+    return { product_variants, total };
   },
 
   create: async (
@@ -186,10 +194,7 @@ export const productVariantRepository = {
   ): Promise<product_variants> => {
     return prisma.product_variants.update({
       where: { id },
-      data: {
-        ...input,
-        update_at: new Date(),
-      },
+      data: input,
     });
   },
   deleteById: async (id: number): Promise<product_variants> => {

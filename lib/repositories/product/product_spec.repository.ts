@@ -90,7 +90,16 @@ export const productSpecRepository = {
     });
   },
 
-  // Lấy theo bộ lọc product và spec_key
+  // Lấy danh sách giá trị thông số của sp
+  findByProductId: async (product_id: number): Promise<Product_Spec | null> => {
+    return prisma.product_specs.findFirst({
+      where: {
+        product_id: product_id,
+      },
+      include: productSpecInclude,
+    });
+  },
+  // Kiểm tra tính duy nhất 1 sp chỉ có 1 thông số đó
   findByProductSpec: async (
     product_id: number,
     spec_key_id: number,

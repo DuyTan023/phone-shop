@@ -29,50 +29,64 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import type { CreateProductVariantInput } from "@/lib/types/products/product_variant.type";
+import type { UpdateProductVariantInput } from "@/lib/types/products/product_variant.type";
 import type { ApiResponse } from "@/lib/types/public/types";
-import { useState } from "react";
+import { Pencil } from "lucide-react";
+import { useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 
-interface FormCreateProductVariantDialogProps {
-  product_id: number;
-  name: string;
+interface FormUpdateProductVariantDialogProps {
+  product_variant: product_variants;
   colors?: ColorType[] | null;
   rams?: RamType[] | null;
   storages?: StorageType[] | null;
   onSuccess?: () => void;
 }
 
-export default function FormCreateProductVariantDialog({
-  product_id,
-  name,
+export default function FormUpdateProductVariantDialog({
+  product_variant,
   colors = [],
   rams = [],
   storages = [],
   onSuccess,
-}: FormCreateProductVariantDialogProps) {
+}: FormUpdateProductVariantDialogProps) {
   const [open, setOpen] = useState(false);
 
   const colorList = colors ?? [];
   const ramList = rams ?? [];
   const storageList = storages ?? [];
 
-  const form = useForm<CreateProductVariantInput>({
+  const form = useForm<UpdateProductVariantInput>({
     defaultValues: {
-      product_id: product_id,
-      color_id: 0,
-      storage_id: 0,
-      ram_id: 0,
-      price: 0,
-      cost_price: 0,
-      stock: 0,
-      status: true,
-      is_default: false,
+      product_id: product_variant?.product_id,
+      color_id: product_variant?.color_id ?? 0,
+      storage_id: product_variant?.storage_id ?? 0,
+      ram_id: product_variant?.ram_id ?? 0,
+      price: product_variant?.price ?? 0,
+      cost_price: product_variant?.cost_price ?? 0,
+      stock: product_variant?.stock ?? 0,
+      status: product_variant?.status ?? true,
+      is_default: product_variant?.is_default ?? false,
     },
   });
 
-  const { isSubmitting } = form.formState;
+  // Cập nhật lại form khi truyền vào product_variant mới
+  useEffect(() => {
+    if (product_variant) {
+      form.reset({
+        product_id: product_variant.product_id,
+        color_id: product_variant.color_id ?? 0,
+        storage_id: product_variant.storage_id ?? 0,
+        ram_id: product_variant.ram_id ?? 0,
+        price: product_variant.price ?? 0,
+        cost_price: product_variant.cost_price ?? 0,
+        stock: product_variant.stock ?? 0,
+        status: product_variant.status ?? true,
+        is_default: product_variant.is_default ?? false,
+      });
+    }
+  }, [product_variant, form]);
 
   const selectedColor =
     colorList.find((s) => s?.id === form.watch("color_id")) ?? null;
@@ -81,43 +95,33 @@ export default function FormCreateProductVariantDialog({
   const selectedStorage =
     storageList.find((s) => s?.id === form.watch("storage_id")) ?? null;
 
-  const onSubmit = async (data: CreateProductVariantInput) => {
+  const onSubmit = async (data: UpdateProductVariantInput) => {
     try {
-      const response = await fetch("/api/product_manager/product_variants", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      console.log(data);
+      const response = await fetch(
+        `/api/product_manager/product_variants/${product_variant.id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            ...data,
+            id: product_variant.id,
+          }),
         },
-        body: JSON.stringify(data),
-      });
+      );
 
       const result: ApiResponse<product_variants> = await response.json();
 
       if (result.success) {
-        toast.success(result.message || "Thêm mới biến thể thành công", {
+        toast.success(result.message || "Cập nhật biến thể thành công", {
           description: "Thông tin biến thể đã lưu vào hệ thống.",
         });
-
-        // Reset form về giá trị ban đầu
-        form.reset({
-          product_id: product_id,
-          color_id: 0,
-          storage_id: 0,
-          ram_id: 0,
-          price: 0,
-          cost_price: 0,
-          stock: 0,
-          status: true,
-          is_default: false,
-        });
-
-        // Đóng Dialog
         setOpen(false);
-
-        // Gọi callback revalidate/refresh dữ liệu ở trang cha
-        onSuccess?.();
+        if (onSuccess) onSuccess();
       } else {
-        toast.error(result.message || "Tạo biến thể thất bại");
+        toast.error(result.message || "Cập nhật biến thể thất bại");
       }
     } catch (error) {
       console.error("Lỗi khi kết nối đến API:", error);
@@ -127,14 +131,26 @@ export default function FormCreateProductVariantDialog({
 
   return (
     <Dialog open={open} onOpenChange={setOpen} modal={false}>
-      <DialogTrigger render={<Button variant="outline">Tạo biến thể</Button>} />
+      {/* Trigger button cây bút chì màu xanh */}
+      <DialogTrigger
+        render={
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-8 w-8 bg-blue-50 text-blue-600 hover:bg-blue-100 hover:text-blue-700 dark:bg-blue-950/50 dark:text-blue-400 dark:hover:bg-blue-900/50"
+            title="Chỉnh sửa biến thể"
+          >
+            <Pencil className="h-4 w-4" />
+          </Button>
+        }
+      />
 
       <DialogContent className="sm:max-w-[650px] max-h-[90vh] overflow-y-auto bg-white">
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           <DialogHeader>
-            <DialogTitle>Tạo biến thể sản phẩm: {name}</DialogTitle>
+            <DialogTitle>Cập nhật biến thể sản phẩm</DialogTitle>
             <DialogDescription>
-              Thêm biến thể mới cho sản phẩm
+              Chỉnh sửa thông tin chi tiết cho biến thể sản phẩm
             </DialogDescription>
           </DialogHeader>
 
@@ -325,13 +341,16 @@ export default function FormCreateProductVariantDialog({
           <DialogFooter className="gap-2 sm:gap-0">
             <DialogClose
               render={
-                <Button type="button" variant="outline" disabled={isSubmitting}>
+                <Button type="button" variant="outline">
                   Hủy
                 </Button>
               }
             />
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Đang xử lý..." : "Thêm mới"}
+            <Button
+              type="submit"
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              Cập nhật
             </Button>
           </DialogFooter>
         </form>

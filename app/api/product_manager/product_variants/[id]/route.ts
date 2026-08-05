@@ -1,9 +1,10 @@
 import type { product_variants } from "@/app/generated/prisma/client";
 import type { ProductVariant } from "@/lib/repositories/product/products_variant.repository";
 import { productVariantService } from "@/lib/services/products/product_variant.service";
+import type { UpdateProductVariantInput } from "@/lib/types/products/product_variant.type";
 import type { ApiResponse } from "@/lib/types/public/types";
+import { Decimal } from "@prisma/client/runtime/client";
 import { NextResponse, type NextRequest } from "next/server";
-
 type routeContext = { params: Promise<{ id: string }> };
 
 export async function GET(req: NextRequest, { params }: routeContext) {
@@ -41,12 +42,25 @@ export async function PUT(req: NextRequest, { params }: routeContext) {
   const numId = Number(id);
   try {
     const body = await req.json();
-    const serie = await productVariantService.updateProductVariant(numId, body);
+    // 🛠️ Chuyển đổi string/number thành Decimal instance
+    const payload: UpdateProductVariantInput = {
+      ...body,
+      ...(body.price !== undefined && { price: new Decimal(body.price) }),
+      ...(body.cost_price !== undefined && {
+        cost_price: new Decimal(body.cost_price),
+      }),
+    };
+
+    const result = await productVariantService.updateProductVariant(
+      numId,
+      payload,
+    );
+
     return NextResponse.json<ApiResponse<product_variants>>(
       {
         success: true,
         message: "Cập nhật biến thể sản phẩm thành công",
-        data: serie,
+        data: result,
       },
       { status: 200 },
     );

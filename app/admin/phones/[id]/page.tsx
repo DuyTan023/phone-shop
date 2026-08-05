@@ -2,8 +2,6 @@
 "use client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { ProductWithSerie } from "@/lib/repositories/product/product.repository";
@@ -22,6 +20,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
+import SpecsTabContent from "@/lib/components/ui/product_manager/product_specs/TabProductSpec";
 import TabProductVariantInfo from "@/lib/components/ui/product_manager/product_variants/TabProductVariantInfo";
 import TabProductInfo from "@/lib/components/ui/product_manager/products/TabProductInfo";
 import type { UpdateProductInput } from "@/lib/types/products/product.type";
@@ -222,67 +221,7 @@ export default function PhoneDetailPage() {
           <TabProductVariantInfo product_id={product.id} name={product.name} />
 
           {/* TAB 3: THÔNG SỐ KỸ THUẬT */}
-          <TabsContent value="specs" className="m-0 focus-visible:outline-none">
-            <div className="rounded-xl border border-slate-200/80 bg-white shadow-sm overflow-hidden">
-              <div className="p-5 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
-                <div>
-                  <h2 className="text-sm font-bold text-slate-900">
-                    Thông số kỹ thuật chi tiết
-                  </h2>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    Thiết lập thông số cho trang so sánh và chi tiết sản phẩm.
-                  </p>
-                </div>
-                <Button
-                  size="sm"
-                  className="gap-1.5 text-xs bg-violet-600 hover:bg-violet-700 text-white"
-                >
-                  <Save className="h-3.5 w-3.5" />
-                  Lưu cấu hình
-                </Button>
-              </div>
-
-              <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-5">
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-medium text-slate-700">
-                    Màn hình
-                  </Label>
-                  <Input
-                    defaultValue="6.7 inch, Super Retina XDR OLED, 120Hz"
-                    className="border-slate-200"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-medium text-slate-700">
-                    Chip xử lý (CPU)
-                  </Label>
-                  <Input
-                    defaultValue="Apple A17 Pro 6 nhân"
-                    className="border-slate-200"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-medium text-slate-700">
-                    Camera sau
-                  </Label>
-                  <Input
-                    defaultValue="Chính 48 MP & Phụ 12 MP, 12 MP"
-                    className="border-slate-200"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-medium text-slate-700">
-                    Pin & Sạc
-                  </Label>
-                  <Input
-                    defaultValue="4422 mAh, Sạc nhanh 20W"
-                    className="border-slate-200"
-                  />
-                </div>
-              </div>
-            </div>
-          </TabsContent>
-
+          <SpecsTabContent />
           {/* TAB 4: THƯ VIỆN ẢNH */}
           <TabsContent
             value="gallery"
