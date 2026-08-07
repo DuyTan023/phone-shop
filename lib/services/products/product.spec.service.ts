@@ -1,4 +1,5 @@
 import type { product_specs } from "@/app/generated/prisma/client";
+import { prisma } from "@/lib/prisma";
 import {
   Product_Spec,
   productSpecRepository,
@@ -15,6 +16,12 @@ type GetProductSpecParams = {
   limit?: number;
   keyword?: string;
 };
+
+export interface GroupedProductSpec {
+  groupId: number;
+  groupName: string;
+  specs: Product_Spec[];
+}
 export const productSpecService = {
   GetProductSpec: async ({
     page = 1,
@@ -60,6 +67,25 @@ export const productSpecService = {
       if (err instanceof Error && err.message === "NOT_FOUND") throw err;
       throw new Error("SERVER_ERROR");
     }
+  },
+
+  getProductSpecsGrouped: async (
+    product_Id: number,
+  ): Promise<GroupedProductSpec[]> => {
+    const productExists = await prisma.products.findUnique({
+      where: { id: product_Id },
+      select: { id: true },
+    });
+
+    if (!productExists) {
+      throw new Error(`Sản phẩm với ID ${product_Id} không tồn tại.`);
+    }
+
+    // 2. Lấy dữ liệu gom nhóm từ Repository
+    const groupedSpecs =
+      await productSpecRepository.getProductSpecsGroupedByGroup(product_Id);
+
+    return groupedSpecs;
   },
 
   createProductSpec: async (

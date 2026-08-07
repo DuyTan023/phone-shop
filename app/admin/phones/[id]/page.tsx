@@ -9,18 +9,16 @@ import type { ApiResponse } from "@/lib/types/public/types";
 import {
   ArrowLeft,
   ExternalLink,
-  Eye,
   FileText,
   Image as ImageIcon,
   Layers,
   Save,
   Sliders,
-  Trash2,
-  UploadCloud,
 } from "lucide-react";
 import Link from "next/link";
 
-import SpecsTabContent from "@/lib/components/ui/product_manager/product_specs/TabProductSpec";
+import ProductImagesTab from "@/lib/components/ui/product_manager/product_images/productImageTab";
+import ProductSpecsTab from "@/lib/components/ui/product_manager/product_specs/TabProductSpec";
 import TabProductVariantInfo from "@/lib/components/ui/product_manager/product_variants/TabProductVariantInfo";
 import TabProductInfo from "@/lib/components/ui/product_manager/products/TabProductInfo";
 import type { UpdateProductInput } from "@/lib/types/products/product.type";
@@ -221,59 +219,18 @@ export default function PhoneDetailPage() {
           <TabProductVariantInfo product_id={product.id} name={product.name} />
 
           {/* TAB 3: THÔNG SỐ KỸ THUẬT */}
-          <SpecsTabContent />
+          <TabsContent
+            value="specs"
+            className="mt-4 focus-visible:outline-none"
+          >
+            <ProductSpecsTab productId={product?.id} />
+          </TabsContent>
           {/* TAB 4: THƯ VIỆN ẢNH */}
           <TabsContent
             value="gallery"
             className="m-0 focus-visible:outline-none"
           >
-            <div className="rounded-xl border border-slate-200/80 bg-white shadow-sm overflow-hidden">
-              <div className="p-5 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
-                <div>
-                  <h2 className="text-sm font-bold text-slate-900">
-                    Bộ sưu tập ảnh sản phẩm
-                  </h2>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    Quản lý danh sách hình ảnh bổ sung cho sản phẩm.
-                  </p>
-                </div>
-                <Button
-                  size="sm"
-                  className="gap-1.5 text-xs bg-amber-600 hover:bg-amber-700 text-white"
-                >
-                  <UploadCloud className="h-3.5 w-3.5" />
-                  Tải ảnh lên
-                </Button>
-              </div>
-
-              <div className="p-6 grid grid-cols-2 sm:grid-cols-4 gap-4">
-                {[1, 2, 3, 4].map((item) => (
-                  <div
-                    key={item}
-                    className="group relative aspect-square rounded-lg border border-slate-200 bg-slate-50 flex items-center justify-center text-xs text-slate-400 font-medium overflow-hidden hover:border-amber-400 transition-all"
-                  >
-                    <span>Image {item}</span>
-                    {/* Hover Actions */}
-                    <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                      <Button
-                        size="icon"
-                        variant="secondary"
-                        className="h-7 w-7 bg-white/90 hover:bg-white text-slate-700"
-                      >
-                        <Eye className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button
-                        size="icon"
-                        variant="destructive"
-                        className="h-7 w-7 bg-rose-600 hover:bg-rose-700"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+            <ProductImagesTab productId={product?.id} />
           </TabsContent>
         </div>
       </Tabs>

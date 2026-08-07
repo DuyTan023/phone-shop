@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import type { Prisma, product_specs } from "@/app/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import type {
@@ -111,6 +112,72 @@ export const productSpecRepository = {
       },
       include: productSpecInclude,
     });
+  },
+
+  getProductSpecsGroupedByGroup: async (productId: number) => {
+    // 1. Truy vấn tất cả thông số của product kèm theo quan hệ Key, Group và Unit
+    const specs = await prisma.product_specs.findMany({
+      where: {
+        product_id: productId,
+      },
+      select: {
+        id: true,
+        spec_value: true,
+        units: {
+          select: {
+            id: true,
+            // Thêm các field tên đơn vị nếu có (ví dụ: name, symbol)
+          },
+        },
+        spec_keys: {
+          select: {
+            id: true,
+            name: true,
+            spec_groups: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    // 2. Gom nhóm kết quả theo spec_groups bằng JavaScript
+    const groupedSpecs = specs.reduce(
+      (acc, curr) => {
+        const group = curr.spec_keys.spec_groups;
+        const groupId = group.id;
+
+        // Nếu nhóm chưa tồn tại trong accumulator thì khởi tạo
+        if (!acc[groupId]) {
+          acc[groupId] = {
+            groupId: group.id,
+            groupName: group.name,
+            specs: [],
+          };
+        }
+
+        // Đưa thông số vào nhóm tương ứng
+        acc[groupId].specs.push({
+          specId: curr.id,
+          keyId: curr.spec_keys.id,
+          keyName: curr.spec_keys.name,
+          value: curr.spec_value,
+          unit: curr.units,
+        });
+
+        return acc;
+      },
+      {} as Record<
+        number,
+        { groupId: number; groupName: string; specs: any[] }
+      >,
+    );
+
+    // Chuyển object gom nhóm thành dạng mảng danh sách
+    return Object.values(groupedSpecs);
   },
   createProductSpec: async (
     input: CreateProductSpecInput,

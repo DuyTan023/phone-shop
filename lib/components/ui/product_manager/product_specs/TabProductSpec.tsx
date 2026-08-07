@@ -1,524 +1,948 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
+import type { spec_groups } from "@/app/generated/prisma/client";
 import { Button } from "@/components/ui/button";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 import {
   Dialog,
   DialogContent,
-  DialogFooter,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { TabsContent } from "@/components/ui/tabs";
-import { Layers, Plus, Ruler, Save, Tag, Trash2 } from "lucide-react";
-import { useState } from "react";
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+import {
+  AlertCircle,
+  Check,
+  CheckCircle,
+  ChevronsUpDown,
+  FolderPlus,
+  KeyRound,
+  Layers,
+  Loader2,
+  Plus,
+  Tag,
+  Trash2,
+} from "lucide-react";
+import React, { useEffect, useState } from "react";
 
-// Mock Data ban đầu từ Database
-const INITIAL_GROUPS = [
-  { id: 1, name: "Màn hình" },
-  { id: 2, name: "Cấu hình & Bộ nhớ" },
-  { id: 3, name: "Camera" },
-  { id: 4, name: "Pin & Sạc" },
-];
+// ==========================================
+// TYPES
+// ==========================================
+export interface SpecGroup {
+  id: number;
+  name: string;
+}
 
-const INITIAL_KEYS = [
-  { id: 1, group_id: 1, name: "Kích thước màn hình" },
-  { id: 2, group_id: 1, name: "Công nghệ màn hình" },
-  { id: 3, group_id: 1, name: "Tần số quét" },
-  { id: 4, group_id: 2, name: "Chip xử lý (CPU)" },
-  { id: 5, group_id: 2, name: "Chip đồ họa (GPU)" },
-  { id: 6, group_id: 3, name: "Camera sau" },
-  { id: 7, group_id: 3, name: "Camera trước" },
-  { id: 8, group_id: 4, name: "Dung lượng pin" },
-  { id: 9, group_id: 4, name: "Công suất sạc" },
-];
+export interface SpecKey {
+  id: number;
+  group_id: number;
+  name: string;
+  spec_groups?: {
+    id: number;
+    name: string;
+  };
+}
 
-const INITIAL_UNITS = [
-  { id: 1, name: "Inches", symbol: "inch" },
-  { id: 2, name: "Hertz", symbol: "Hz" },
-  { id: 3, name: "Milliampere-hour", symbol: "mAh" },
-  { id: 4, name: "Watt", symbol: "W" },
-  { id: 5, name: "Megapixel", symbol: "MP" },
-  { id: 6, name: "Gigabyte", symbol: "GB" },
-];
+export interface Unit {
+  id: number;
+  name: string;
+  symbol: string;
+}
 
-interface SpecItem {
-  tempId: string;
-  spec_key_id: number | null;
+export interface SpecItem {
+  id?: number;
+  product_id?: number;
+  spec_key_id: number;
   spec_value: string;
   unit_id: number | null;
 }
 
-export default function SpecsTabContent() {
-  // Master Master Data States
-  const [groups, setGroups] = useState(INITIAL_GROUPS);
-  const [keys, setKeys] = useState(INITIAL_KEYS);
-  const [units, setUnits] = useState(INITIAL_UNITS);
+interface SpecsTabProps {
+  productId?: number | string;
+  initialSpecs?: SpecItem[];
+  onChange?: (specs: SpecItem[]) => void;
+}
 
-  // Form Value State
-  const [specs, setSpecs] = useState<SpecItem[]>([
-    { tempId: "1", spec_key_id: 1, spec_value: "6.7", unit_id: 1 },
-    { tempId: "2", spec_key_id: 3, spec_value: "120", unit_id: 2 },
-    { tempId: "3", spec_key_id: 4, spec_value: "Apple A17 Pro", unit_id: null },
-    { tempId: "4", spec_key_id: 8, spec_value: "4422", unit_id: 3 },
-    { tempId: "5", spec_key_id: 9, spec_value: "20", unit_id: 4 },
-  ]);
+interface CreateSpecKeyDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSuccess: (newCreatedKeyId?: number) => void;
+  preselectedGroupId?: number | null;
+}
 
-  // Dialog States cho việc tạo mới Master Data
-  const [isAddGroupOpen, setIsAddGroupOpen] = useState(false);
-  const [newGroupName, setNewGroupName] = useState("");
+// ==========================================
+// HELPER FETCHING
+// ==========================================
+const fetchData = async <T,>(
+  url: string,
+  errorMessage: string,
+): Promise<T[]> => {
+  try {
+    const res = await fetch(url);
+    const result = await res.json();
 
-  const [isAddKeyOpen, setIsAddKeyOpen] = useState(false);
-  const [selectedGroupIdForKey, setSelectedGroupIdForKey] = useState<
-    number | null
-  >(null);
-  const [newKeyName, setNewKeyName] = useState("");
+    if (!res.ok) throw new Error(result?.message || errorMessage);
 
-  const [isAddUnitOpen, setIsAddUnitOpen] = useState(false);
-  const [newUnitName, setNewUnitName] = useState("");
-  const [newUnitSymbol, setNewUnitSymbol] = useState("");
+    if (Array.isArray(result)) return result as T[];
 
-  // Handler: Thêm Nhóm Mới (spec_groups)
-  const handleCreateGroup = () => {
-    if (!newGroupName.trim()) return;
-    const newGroup = {
-      id: Date.now(),
-      name: newGroupName.trim(),
+    if (result?.data?.data && Array.isArray(result.data.data)) {
+      return result.data.data as T[];
+    }
+
+    if (result && typeof result === "object") {
+      if (Array.isArray(result.data)) return result.data as T[];
+      if (Array.isArray(result.result)) return result.result as T[];
+      if (Array.isArray(result.items)) return result.items as T[];
+    }
+
+    return [];
+  } catch (error) {
+    console.error(`[Fetch Error] ${url}:`, error);
+    return [];
+  }
+};
+
+// ==========================================
+// CREATE SPEC KEY DIALOG FORM & WRAPPER
+// ==========================================
+function CreateSpecKeyForm({
+  onClose,
+  onSuccess,
+  preselectedGroupId,
+}: {
+  onClose: () => void;
+  onSuccess: (newCreatedKeyId?: number) => void;
+  preselectedGroupId?: number | null;
+}) {
+  const [name, setName] = useState("");
+  const [groupId, setGroupId] = useState<number | null>(
+    preselectedGroupId ?? null,
+  );
+  const [groups, setGroups] = useState<spec_groups[] | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [openCombobox, setOpenCombobox] = useState(false);
+
+  const isLoadingGroups = groups === null;
+
+  useEffect(() => {
+    let cancelled = false;
+
+    fetch("/api/catalogs/spec_groups")
+      .then((res) => res.json())
+      .then((data) => {
+        if (cancelled) return;
+        const list = data.data?.data || data.data || data;
+        setGroups(Array.isArray(list) ? list : []);
+      })
+      .catch((err) => {
+        console.error("Lỗi fetch groups:", err);
+        if (!cancelled) {
+          setGroups([]);
+          setErrorMessage("Không thể tải danh sách nhóm thông số");
+        }
+      });
+
+    return () => {
+      cancelled = true;
     };
-    setGroups((prev) => [...prev, newGroup]);
-    setNewGroupName("");
-    setIsAddGroupOpen(false);
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim() || !groupId) return;
+
+    setErrorMessage(null);
+
+    try {
+      setIsSubmitting(true);
+      const res = await fetch("/api/catalogs/spec_keys", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: name.trim(), group_id: groupId }),
+      });
+
+      const resData = await res.json().catch(() => null);
+
+      if (res.ok && (resData?.success || resData?.data || resData?.id)) {
+        const createdId =
+          resData?.data?.id || resData?.id || resData?.data?.data?.id;
+        onClose();
+        onSuccess(createdId);
+        return;
+      }
+
+      if (resData?.message) {
+        setErrorMessage(resData.message);
+      } else {
+        switch (res.status) {
+          case 409:
+            setErrorMessage("Thông số đã tồn tại trong nhóm này.");
+            break;
+          case 400:
+            setErrorMessage(
+              "Dữ liệu đầu vào không hợp lệ. Vui lòng kiểm tra lại.",
+            );
+            break;
+          case 404:
+            setErrorMessage("Nhóm thông số chọn không tồn tại.");
+            break;
+          default:
+            setErrorMessage(
+              "Có lỗi xảy ra phía máy chủ (500). Vui lòng thử lại sau.",
+            );
+            break;
+        }
+      }
+    } catch (error) {
+      console.error("Lỗi tạo spec key:", error);
+      setErrorMessage("Không thể kết nối đến máy chủ. Vui lòng kiểm tra mạng.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  // Handler: Thêm Thông Số Mới (spec_keys)
-  const handleCreateKey = () => {
-    if (!newKeyName.trim() || !selectedGroupIdForKey) return;
-    const newKey = {
-      id: Date.now(),
-      group_id: selectedGroupIdForKey,
-      name: newKeyName.trim(),
-    };
-    setKeys((prev) => [...prev, newKey]);
-
-    // Tự động thêm một dòng spec chuẩn bị nhập cho key mới tạo này
-    setSpecs((prev) => [
-      ...prev,
-      {
-        tempId: Date.now().toString(),
-        spec_key_id: newKey.id,
-        spec_value: "",
-        unit_id: null,
-      },
-    ]);
-
-    setNewKeyName("");
-    setIsAddKeyOpen(false);
-  };
-
-  // Handler: Thêm Đơn Vị Mới (units)
-  const handleCreateUnit = () => {
-    if (!newUnitName.trim() || !newUnitSymbol.trim()) return;
-    const newUnit = {
-      id: Date.now(),
-      name: newUnitName.trim(),
-      symbol: newUnitSymbol.trim(),
-    };
-    setUnits((prev) => [...prev, newUnit]);
-    setNewUnitName("");
-    setNewUnitSymbol("");
-    setIsAddUnitOpen(false);
-  };
-
-  // Thao tác với danh sách Giá trị sản phẩm (product_specs)
-  const handleAddSpecRow = (defaultKeyId?: number) => {
-    setSpecs((prev) => [
-      ...prev,
-      {
-        tempId: Date.now().toString(),
-        spec_key_id: defaultKeyId || null,
-        spec_value: "",
-        unit_id: null,
-      },
-    ]);
-  };
-
-  const handleUpdateSpec = (
-    tempId: string,
-    field: keyof SpecItem,
-    value: any,
-  ) => {
-    setSpecs((prev) =>
-      prev.map((item) =>
-        item.tempId === tempId ? { ...item, [field]: value } : item,
-      ),
-    );
-  };
-
-  const handleRemoveSpec = (tempId: string) => {
-    setSpecs((prev) => prev.filter((item) => item.tempId !== tempId));
-  };
+  const groupList = groups ?? [];
+  const selectedGroup = groupList.find((g) => g.id === groupId);
 
   return (
-    <TabsContent value="specs" className="m-0 focus-visible:outline-none">
-      <div className="rounded-xl border border-slate-200/80 bg-white shadow-sm overflow-hidden">
-        {/* Header */}
-        <div className="p-5 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
-          <div>
-            <h2 className="text-sm font-bold text-slate-900">
-              Thông số kỹ thuật chi tiết
-            </h2>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Thiết lập thông số theo danh mục nhóm, đơn vị & trường dữ liệu.
-            </p>
+    <>
+      <DialogHeader className="space-y-1">
+        <div className="flex items-center gap-3 mb-1">
+          <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center shrink-0 text-slate-700">
+            <KeyRound size={18} />
           </div>
-          <div className="flex items-center gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => setIsAddUnitOpen(true)}
-              className="gap-1.5 text-xs border-slate-200 text-slate-700 hover:bg-slate-50"
+          <div>
+            <DialogTitle className="font-semibold text-slate-800 text-sm">
+              Thêm thông số kỹ thuật
+            </DialogTitle>
+            <DialogDescription
+              render={<div />}
+              className="text-xs text-slate-500"
             >
-              <Ruler className="h-3.5 w-3.5" />
-              Thêm Đơn Vị
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => setIsAddGroupOpen(true)}
-              className="gap-1.5 text-xs border-slate-200 text-slate-700 hover:bg-slate-50"
-            >
-              <Plus className="h-3.5 w-3.5" />
-              Tạo Nhóm Mới
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              className="gap-1.5 text-xs bg-violet-600 hover:bg-violet-700 text-white"
-            >
-              <Save className="h-3.5 w-3.5" />
-              Lưu cấu hình
-            </Button>
+              Tạo tên thông số mới thuộc nhóm thông số tương ứng.
+            </DialogDescription>
           </div>
         </div>
+      </DialogHeader>
 
-        {/* Form Body - Render theo nhóm */}
-        <div className="p-6 space-y-6">
-          {groups.map((group) => {
-            const groupKeys = keys.filter((k) => k.group_id === group.id);
-            const groupKeyIds = groupKeys.map((k) => k.id);
+      {errorMessage && (
+        <div className="flex items-start gap-2.5 p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-xs animate-in fade-in-50">
+          <AlertCircle className="w-4 h-4 shrink-0 text-red-600 mt-0.5" />
+          <div className="flex-1 font-medium">{errorMessage}</div>
+        </div>
+      )}
 
-            // Tìm các item spec người dùng đã chọn nằm trong nhóm này
-            const groupSpecs = specs.filter(
-              (s) => s.spec_key_id && groupKeyIds.includes(s.spec_key_id),
-            );
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="space-y-1.5">
+          <Label className="text-xs font-medium text-slate-700">
+            Nhóm thông số <span className="text-red-500">*</span>
+          </Label>
 
-            return (
-              <div
-                key={group.id}
-                className="border border-slate-200/80 rounded-lg p-4 bg-slate-50/30 space-y-3"
-              >
-                {/* Group Header */}
-                <div className="flex items-center justify-between border-b border-slate-200/60 pb-2">
-                  <div className="flex items-center gap-2 text-slate-800 font-semibold text-xs uppercase tracking-wider">
-                    <Layers className="h-3.5 w-3.5 text-violet-600" />
-                    {group.name}
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        setSelectedGroupIdForKey(group.id);
-                        setIsAddKeyOpen(true);
-                      }}
-                      className="h-7 text-xs text-slate-600 hover:text-violet-600 hover:bg-violet-50 px-2"
-                    >
-                      <Tag className="h-3 w-3 mr-1" />
-                      Thêm thuộc tính
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        const firstKeyInGroup = groupKeys[0];
-                        handleAddSpecRow(firstKeyInGroup?.id);
-                      }}
-                      className="h-7 text-xs text-violet-600 hover:text-violet-700 hover:bg-violet-50 px-2"
-                    >
-                      <Plus className="h-3 w-3 mr-1" />
-                      Thêm dòng
-                    </Button>
-                  </div>
-                </div>
+          <Popover open={openCombobox} onOpenChange={setOpenCombobox}>
+            <PopoverTrigger
+              render={
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={openCombobox}
+                  disabled={isLoadingGroups || isSubmitting}
+                  className="w-full h-9 justify-between font-normal text-xs border-slate-200 focus:ring-slate-400 rounded-lg bg-white px-3"
+                >
+                  {isLoadingGroups ? (
+                    <span className="text-slate-400 flex items-center gap-2">
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" /> Đang
+                      tải...
+                    </span>
+                  ) : selectedGroup ? (
+                    <span className="text-slate-800">{selectedGroup.name}</span>
+                  ) : (
+                    <span className="text-slate-400">
+                      Chọn nhóm thông số...
+                    </span>
+                  )}
+                  <ChevronsUpDown className="ml-2 h-3.5 w-3.5 shrink-0 opacity-50 text-slate-500" />
+                </Button>
+              }
+            />
 
-                {/* Listing spec rows inside group */}
-                {groupSpecs.length === 0 ? (
-                  <p className="text-xs text-slate-400 italic py-1">thêm</p>
-                ) : (
-                  <div className="space-y-2.5">
-                    {groupSpecs.map((item) => (
-                      <div
-                        key={item.tempId}
-                        className="flex items-center gap-2 bg-white p-2 rounded-md border border-slate-200/80 shadow-2xs"
+            <PopoverContent
+              className="w-full min-w-[300px] p-0 bg-white border-slate-200 z-[60] shadow-md rounded-lg"
+              align="start"
+            >
+              <Command>
+                <CommandInput
+                  placeholder="Tìm nhóm thông số..."
+                  className="h-9 text-xs"
+                />
+                <CommandList>
+                  <CommandEmpty className="py-3 text-center text-xs text-slate-500">
+                    Không tìm thấy nhóm nào.
+                  </CommandEmpty>
+                  <CommandGroup>
+                    {groupList.map((group) => (
+                      <CommandItem
+                        key={group.id}
+                        value={group.name}
+                        onSelect={() => {
+                          setGroupId(group.id);
+                          setOpenCombobox(false);
+                          if (errorMessage) setErrorMessage(null);
+                        }}
+                        className="text-xs py-2 cursor-pointer"
                       >
-                        {/* 1. Chọn spec_key */}
-                        <div className="w-1/3">
-                          <Select
-                            value={item.spec_key_id?.toString() || ""}
-                            onValueChange={(val) =>
-                              handleUpdateSpec(
-                                item.tempId,
-                                "spec_key_id",
-                                Number(val),
-                              )
-                            }
-                          >
-                            <SelectTrigger className="h-8 text-xs border-slate-200">
-                              <SelectValue placeholder="Chọn thuộc tính" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {groupKeys.map((key) => (
-                                <SelectItem
-                                  key={key.id}
-                                  value={key.id.toString()}
-                                  className="text-xs"
-                                >
-                                  {key.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        {/* 2. Nhập spec_value */}
-                        <div className="flex-1">
-                          <Input
-                            placeholder="Nhập giá trị..."
-                            value={item.spec_value}
-                            onChange={(e) =>
-                              handleUpdateSpec(
-                                item.tempId,
-                                "spec_value",
-                                e.target.value,
-                              )
-                            }
-                            className="h-8 text-xs border-slate-200"
-                          />
-                        </div>
-
-                        {/* 3. Chọn unit (Đơn vị) */}
-                        <div className="w-28">
-                          <Select
-                            value={item.unit_id?.toString() || "none"}
-                            onValueChange={(val) =>
-                              handleUpdateSpec(
-                                item.tempId,
-                                "unit_id",
-                                val === "none" ? null : Number(val),
-                              )
-                            }
-                          >
-                            <SelectTrigger className="h-8 text-xs border-slate-200 text-slate-600">
-                              <SelectValue placeholder="Đơn vị" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="none" className="text-xs">
-                                -- Không --
-                              </SelectItem>
-                              {units.map((unit) => (
-                                <SelectItem
-                                  key={unit.id}
-                                  value={unit.id.toString()}
-                                  className="text-xs"
-                                >
-                                  {unit.symbol} ({unit.name})
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        {/* 4. Nút Xóa */}
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleRemoveSpec(item.tempId)}
-                          className="h-8 w-8 text-slate-400 hover:text-red-600 hover:bg-red-50"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
+                        <Check
+                          className={cn(
+                            "mr-2 h-3.5 w-3.5 text-slate-700",
+                            groupId === group.id ? "opacity-100" : "opacity-0",
+                          )}
+                        />
+                        {group.name}
+                      </CommandItem>
                     ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
+        </div>
+
+        <div className="space-y-1.5">
+          <Label
+            htmlFor="spec-name"
+            className="text-xs font-medium text-slate-700"
+          >
+            Tên thông số <span className="text-red-500">*</span>
+          </Label>
+          <Input
+            id="spec-name"
+            placeholder="VD: Tần số quét, Độ sáng, Loại RAM..."
+            value={name}
+            onChange={(e) => {
+              setName(e.target.value);
+              if (errorMessage) setErrorMessage(null);
+            }}
+            disabled={isSubmitting}
+            required
+            className="h-9 text-xs border-slate-200 focus-visible:ring-slate-400 rounded-lg placeholder:text-slate-400"
+          />
+        </div>
+
+        <div className="flex items-center justify-end gap-2 pt-2">
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={onClose}
+            disabled={isSubmitting}
+            className="px-3.5 py-1.5 h-auto text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+          >
+            Hủy
+          </Button>
+          <Button
+            type="submit"
+            disabled={isSubmitting || !groupId || !name.trim()}
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 h-auto text-xs font-medium text-white bg-slate-900 hover:bg-slate-800 rounded-lg disabled:opacity-50 transition-colors shadow-sm"
+          >
+            {isSubmitting && <Loader2 size={14} className="animate-spin" />}
+            Tạo mới
+          </Button>
+        </div>
+      </form>
+    </>
+  );
+}
+
+export function CreateSpecKeyDialog({
+  open,
+  onOpenChange,
+  onSuccess,
+  preselectedGroupId,
+}: CreateSpecKeyDialogProps) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[440px] bg-white border border-slate-100 p-5 gap-4 shadow-xl">
+        {open && (
+          <CreateSpecKeyForm
+            onClose={() => onOpenChange(false)}
+            onSuccess={onSuccess}
+            preselectedGroupId={preselectedGroupId}
+          />
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ==========================================
+// MAIN COMPONENT
+// ==========================================
+export default function ProductSpecsTab({
+  productId,
+  initialSpecs = [],
+  onChange,
+}: SpecsTabProps) {
+  const [specGroups, setSpecGroups] = useState<SpecGroup[]>([]);
+  const [specKeys, setSpecKeys] = useState<SpecKey[]>([]);
+  const [units, setUnits] = useState<Unit[]>([]);
+
+  const [selectedSpecs, setSelectedSpecs] = useState<SpecItem[]>(initialSpecs);
+
+  const [loading, setLoading] = useState<boolean>(true);
+  const [saving, setSaving] = useState<boolean>(false);
+  const [deleting, setDeleting] = useState<boolean>(false);
+  const [message, setMessage] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
+
+  // State Dialog Tạo thuộc tính
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const [targetGroupIdForCreate, setTargetGroupIdForCreate] = useState<
+    number | null
+  >(null);
+
+  // State Xác nhận xóa
+  const [deleteTarget, setDeleteTarget] = useState<SpecItem | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadData = async () => {
+      try {
+        setLoading(true);
+
+        const promises: Promise<any>[] = [
+          fetchData<SpecGroup>(
+            "/api/catalogs/spec_groups",
+            "Không thể lấy nhóm thông số",
+          ),
+          fetchData<SpecKey>(
+            "/api/catalogs/spec_keys?limit=1000",
+            "Không thể lấy danh sách thuộc tính",
+          ),
+          fetchData<Unit>("/api/catalogs/units", "Không thể lấy đơn vị đo"),
+        ];
+
+        if (productId) {
+          promises.push(
+            fetchData<SpecItem>(
+              `/api/product_manager/product_specs?product_id=${productId}&limit=1000`,
+              "Không thể lấy thông số sản phẩm",
+            ),
+          );
+        }
+
+        const [groupsData, keysData, unitsData, productSpecsData] =
+          await Promise.all(promises);
+
+        if (isMounted) {
+          setSpecGroups(groupsData);
+          setSpecKeys(keysData);
+          setUnits(unitsData);
+
+          if (
+            productSpecsData &&
+            Array.isArray(productSpecsData) &&
+            productSpecsData.length > 0
+          ) {
+            setSelectedSpecs(productSpecsData);
+          } else if (initialSpecs && initialSpecs.length > 0) {
+            setSelectedSpecs(initialSpecs);
+          }
+
+          setLoading(false);
+        }
+      } catch (err) {
+        console.error("Lỗi tải dữ liệu thông số:", err);
+        if (isMounted) setLoading(false);
+      }
+    };
+
+    loadData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [productId]);
+
+  const updateSpecsState = (newSpecs: SpecItem[]) => {
+    setSelectedSpecs(newSpecs);
+    if (onChange) onChange(newSpecs);
+  };
+
+  const getKeysForGroup = (groupId: number) => {
+    if (!Array.isArray(specKeys)) return [];
+    return specKeys.filter((k) => {
+      const gId = k.group_id ?? k.spec_groups?.id;
+      return Number(gId) === Number(groupId);
+    });
+  };
+
+  const handleAddSpec = (groupId: number, specKeyId: number) => {
+    if (!specKeyId) return;
+
+    if (
+      selectedSpecs.some((s) => Number(s.spec_key_id) === Number(specKeyId))
+    ) {
+      return;
+    }
+
+    const newSpec: SpecItem = {
+      product_id: productId ? Number(productId) : undefined,
+      spec_key_id: Number(specKeyId),
+      spec_value: "",
+      unit_id: null,
+    };
+
+    updateSpecsState([...selectedSpecs, newSpec]);
+  };
+
+  // Mở Dialog thêm thuộc tính cho nhóm cụ thể hoặc tạo chung
+  const handleOpenCreateModal = (groupId?: number) => {
+    setTargetGroupIdForCreate(groupId ?? null);
+    setIsModalOpen(true);
+  };
+
+  // Xử lý sau khi Tạo mới Thuộc tính thành công
+  const handleCreateSuccess = async (newCreatedKeyId?: number) => {
+    try {
+      // 1. Tải lại danh sách thuộc tính mới nhất từ máy chủ
+      const updatedKeys = await fetchData<SpecKey>(
+        "/api/catalogs/spec_keys?limit=1000",
+        "Lỗi cập nhật danh sách thuộc tính",
+      );
+      setSpecKeys(updatedKeys);
+
+      // 2. Nếu tìm thấy ID vừa tạo, tự động thêm ngay vào danh sách đã chọn
+      let keyToAddId = newCreatedKeyId;
+      if (!keyToAddId && updatedKeys.length > 0) {
+        keyToAddId = updatedKeys[updatedKeys.length - 1].id;
+      }
+
+      if (keyToAddId) {
+        const addedKeyObj = updatedKeys.find(
+          (k) => Number(k.id) === Number(keyToAddId),
+        );
+        const targetGroup =
+          addedKeyObj?.group_id ?? addedKeyObj?.spec_groups?.id;
+
+        if (targetGroup) {
+          handleAddSpec(targetGroup, Number(keyToAddId));
+        }
+      }
+
+      setMessage({
+        type: "success",
+        text: "Thêm thuộc tính mới thành công và đã gán vào danh sách!",
+      });
+    } catch (error) {
+      console.error("Lỗi cập nhật thuộc tính sau khi tạo:", error);
+    }
+  };
+
+  const handleConfirmDeleteClick = (item: SpecItem) => {
+    setDeleteTarget(item);
+  };
+
+  const handleExecuteDelete = async () => {
+    if (!deleteTarget) return;
+
+    if (deleteTarget.id) {
+      setDeleting(true);
+      try {
+        const res = await fetch(
+          `/api/product_manager/product_specs/${deleteTarget.id}`,
+          { method: "DELETE" },
+        );
+
+        if (!res.ok) {
+          const resData = await res.json().catch(() => ({}));
+          throw new Error(resData.message || "Xóa thuộc tính thất bại");
+        }
+
+        const nextSpecs = selectedSpecs.filter(
+          (s) => Number(s.spec_key_id) !== Number(deleteTarget.spec_key_id),
+        );
+        updateSpecsState(nextSpecs);
+
+        setMessage({
+          type: "success",
+          text: "Đã xóa thông số khỏi cơ sở dữ liệu!",
+        });
+      } catch (err: any) {
+        console.error("Lỗi xóa spec:", err);
+        setMessage({
+          type: "error",
+          text: err.message || "Không thể xóa thuộc tính này",
+        });
+      } finally {
+        setDeleting(false);
+        setDeleteTarget(null);
+      }
+    } else {
+      const nextSpecs = selectedSpecs.filter(
+        (s) => Number(s.spec_key_id) !== Number(deleteTarget.spec_key_id),
+      );
+      updateSpecsState(nextSpecs);
+      setDeleteTarget(null);
+    }
+  };
+
+  const handleValueChange = (
+    specKeyId: number,
+    field: "spec_value" | "unit_id",
+    val: any,
+  ) => {
+    const nextSpecs = selectedSpecs.map((item) => {
+      if (Number(item.spec_key_id) === Number(specKeyId)) {
+        return { ...item, [field]: val };
+      }
+      return item;
+    });
+    updateSpecsState(nextSpecs);
+  };
+
+  const handleSaveSpecs = async () => {
+    if (!productId) {
+      setMessage({ type: "error", text: "Chưa có ID sản phẩm để lưu" });
+      return;
+    }
+
+    setSaving(true);
+    setMessage(null);
+
+    try {
+      const promises = selectedSpecs.map((item) => {
+        const payload = {
+          product_id: Number(productId),
+          spec_key_id: Number(item.spec_key_id),
+          spec_value: item.spec_value,
+          unit_id: item.unit_id ? Number(item.unit_id) : null,
+        };
+
+        if (item.id) {
+          return fetch(`/api/product_manager/product_specs/${item.id}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          }).then(async (res) => {
+            const resData = await res.json();
+            if (!res.ok)
+              throw new Error(resData.message || "Lỗi cập nhật thông số");
+            return resData;
+          });
+        } else {
+          return fetch(`/api/product_manager/product_specs`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          }).then(async (res) => {
+            const resData = await res.json();
+            if (!res.ok) throw new Error(resData.message || "Lỗi tạo thông số");
+            return resData;
+          });
+        }
+      });
+
+      await Promise.all(promises);
+
+      setMessage({
+        type: "success",
+        text: "Lưu tất cả thông số kỹ thuật thành công!",
+      });
+    } catch (err: any) {
+      console.error("Save specs error:", err);
+      setMessage({ type: "error", text: err.message || "Lỗi khi lưu dữ liệu" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="p-12 text-center text-slate-500 font-medium">
+        Đang tải danh mục thông số kỹ thuật...
+      </div>
+    );
+  }
+
+  const targetKeyName = deleteTarget
+    ? specKeys.find((k) => Number(k.id) === Number(deleteTarget.spec_key_id))
+        ?.name || `ID #${deleteTarget.spec_key_id}`
+    : "";
+
+  return (
+    <div className="space-y-6">
+      {/* Header Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
+        <div>
+          <h3 className="text-base font-semibold text-slate-800 flex items-center gap-2">
+            <Layers className="w-5 h-5 text-blue-600" />
+            Thông số kỹ thuật sản phẩm
+          </h3>
+          <p className="text-xs text-slate-500 mt-1">
+            Chọn nhóm và điền chi tiết các thông số cho sản phẩm này.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => handleOpenCreateModal()}
+          className="inline-flex items-center justify-center gap-2 px-3 py-2 bg-white text-slate-700 hover:bg-slate-100 text-xs font-medium rounded-lg border border-slate-300 shadow-sm transition"
+        >
+          <Tag className="w-4 h-4 text-slate-500" />
+          Tạo thuộc tính mới
+        </button>
+      </div>
+
+      {/* Alert */}
+      {message && (
+        <div
+          className={`p-4 rounded-xl flex items-center gap-3 text-sm font-medium ${
+            message.type === "success"
+              ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+              : "bg-rose-50 text-rose-700 border border-rose-200"
+          }`}
+        >
+          {message.type === "success" ? (
+            <CheckCircle className="w-5 h-5 text-emerald-600 shrink-0" />
+          ) : (
+            <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
+          )}
+          {message.text}
+        </div>
+      )}
+
+      {/* Spec Groups List */}
+      <div className="space-y-6">
+        {specGroups.map((group) => {
+          const availableKeys = getKeysForGroup(group.id);
+
+          const unselectedKeys = availableKeys.filter(
+            (k) =>
+              !selectedSpecs.some(
+                (s) => Number(s.spec_key_id) === Number(k.id),
+              ),
+          );
+
+          const groupSelectedSpecs = selectedSpecs.filter((s) =>
+            availableKeys.some((k) => Number(k.id) === Number(s.spec_key_id)),
+          );
+
+          return (
+            <div
+              key={group.id}
+              className="border border-slate-200 rounded-xl overflow-hidden bg-white shadow-sm"
+            >
+              {/* Group Header */}
+              <div className="bg-slate-100/80 px-4 py-3 border-b border-slate-200 flex items-center justify-between">
+                <span className="font-semibold text-slate-800 text-sm flex items-center gap-2">
+                  <FolderPlus className="w-4 h-4 text-blue-600" />
+                  {group.name}
+                </span>
+
+                {/* Nếu còn thuộc tính chưa chọn -> Hiển thị Dropdown */}
+                {unselectedKeys.length > 0 ? (
+                  <select
+                    className="text-xs bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    onChange={(e) => {
+                      if (e.target.value) {
+                        handleAddSpec(group.id, Number(e.target.value));
+                        e.target.value = "";
+                      }
+                    }}
+                    defaultValue=""
+                  >
+                    <option value="" disabled>
+                      + Thêm thuộc tính vào nhóm này
+                    </option>
+                    {unselectedKeys.map((k) => (
+                      <option key={k.id} value={k.id}>
+                        {k.name}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  /* Khi ĐÃ HẾT thuộc tính chưa dùng -> Hiển thị nút Nút Thêm Mới mở Dialog */
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => handleOpenCreateModal(group.id)}
+                    className="h-8 text-xs font-medium bg-white text-slate-700 hover:bg-slate-50 border-dashed border-slate-300 hover:border-slate-400 gap-1.5 rounded-lg shadow-none"
+                  >
+                    <Plus className="w-3.5 h-3.5 text-slate-500" />
+                    Thêm thuộc tính mới
+                  </Button>
+                )}
+              </div>
+
+              {/* Group Content */}
+              <div className="p-4">
+                {groupSelectedSpecs.length === 0 ? (
+                  <div className="text-center py-6 border-2 border-dashed border-slate-100 rounded-lg">
+                    <p className="text-xs text-slate-400">
+                      Chưa chọn thuộc tính nào cho nhóm này
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {groupSelectedSpecs.map((item) => {
+                      const specKeyObj = specKeys.find(
+                        (k) => Number(k.id) === Number(item.spec_key_id),
+                      );
+
+                      return (
+                        <div
+                          key={item.spec_key_id}
+                          className="flex flex-col sm:flex-row items-start sm:items-center gap-3 p-2.5 bg-slate-50/50 rounded-lg border border-slate-200/80 hover:border-slate-300 transition"
+                        >
+                          <div className="w-full sm:w-1/3 text-xs font-semibold text-slate-700 truncate">
+                            {specKeyObj?.name ||
+                              `Thuộc tính #${item.spec_key_id}`}
+                          </div>
+
+                          <div className="flex-1 w-full">
+                            <input
+                              type="text"
+                              value={item.spec_value || ""}
+                              onChange={(e) =>
+                                handleValueChange(
+                                  item.spec_key_id,
+                                  "spec_value",
+                                  e.target.value,
+                                )
+                              }
+                              placeholder="Nhập giá trị (VD: 8GB, AMOLED...)"
+                              className="w-full text-xs bg-white border border-slate-300 rounded-lg px-3 py-2 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
+
+                          <div className="w-full sm:w-36">
+                            <select
+                              value={item.unit_id || ""}
+                              onChange={(e) =>
+                                handleValueChange(
+                                  item.spec_key_id,
+                                  "unit_id",
+                                  e.target.value
+                                    ? Number(e.target.value)
+                                    : null,
+                                )
+                              }
+                              className="w-full text-xs bg-white border border-slate-300 rounded-lg px-2.5 py-2 text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            >
+                              <option value="">Không có ĐVT</option>
+                              {units.map((u) => (
+                                <option key={u.id} value={u.id}>
+                                  {u.symbol
+                                    ? `${u.symbol} (${u.name})`
+                                    : u.name}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => handleConfirmDeleteClick(item)}
+                            className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                            title="Xóa thuộc tính"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>
-            );
-          })}
-        </div>
+            </div>
+          );
+        })}
       </div>
 
-      {/* --- DIALOG 1: THÊM NHÓM MỚI (spec_groups) --- */}
-      <Dialog open={isAddGroupOpen} onOpenChange={setIsAddGroupOpen}>
-        <DialogContent className="sm:max-w-[400px]">
-          <DialogHeader>
-            <DialogTitle className="text-base font-bold">
-              Thêm Nhóm Thông Số Mới
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3 py-2">
-            <div className="space-y-1.5">
-              <Label className="text-xs">Tên Nhóm (spec_groups.name)</Label>
-              <Input
-                placeholder="VD: Khả năng kết nối, Thiết kế..."
-                value={newGroupName}
-                onChange={(e) => setNewGroupName(e.target.value)}
-                className="text-xs"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsAddGroupOpen(false)}
-              className="text-xs"
-            >
-              Hủy
-            </Button>
-            <Button
-              size="sm"
-              onClick={handleCreateGroup}
-              className="text-xs bg-violet-600 hover:bg-violet-700 text-white"
-            >
-              Tạo Nhóm
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Save Button */}
+      {productId && (
+        <div className="flex justify-end pt-4 border-t border-slate-200">
+          <button
+            type="button"
+            onClick={handleSaveSpecs}
+            disabled={saving}
+            className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs rounded-xl shadow-sm transition disabled:opacity-50"
+          >
+            {saving ? "Đang lưu..." : "Lưu thay đổi thông số"}
+          </button>
+        </div>
+      )}
 
-      {/* --- DIALOG 2: THÊM THUỘC TÍNH MỚI VÀO NHÓM (spec_keys) --- */}
-      <Dialog open={isAddKeyOpen} onOpenChange={setIsAddKeyOpen}>
-        <DialogContent className="sm:max-w-[400px]">
-          <DialogHeader>
-            <DialogTitle className="text-base font-bold">
-              Thêm Thuộc Tính Mới
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3 py-2">
-            <div className="space-y-1.5">
-              <Label className="text-xs">Thuộc Nhóm</Label>
-              <Select
-                value={selectedGroupIdForKey?.toString() || ""}
-                onValueChange={(val) => setSelectedGroupIdForKey(Number(val))}
+      {/* Create Spec Key Dialog */}
+      <CreateSpecKeyDialog
+        open={isModalOpen}
+        onOpenChange={setIsModalOpen}
+        onSuccess={handleCreateSuccess}
+        preselectedGroupId={targetGroupIdForCreate}
+      />
+
+      {/* Confirm Delete Dialog */}
+      {deleteTarget && (
+        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-xl border border-slate-100 animate-in fade-in zoom-in duration-150">
+            <div className="flex items-center gap-3 text-rose-600 mb-3">
+              <div className="p-2 bg-rose-50 rounded-full">
+                <AlertCircle className="w-6 h-6" />
+              </div>
+              <h3 className="text-base font-semibold text-slate-800">
+                Xác nhận xóa
+              </h3>
+            </div>
+
+            <p className="text-xs text-slate-600 leading-relaxed mb-6">
+              Bạn có chắc chắn muốn xóa thuộc tính{" "}
+              <strong className="text-slate-900 font-semibold">
+                `{targetKeyName}`
+              </strong>{" "}
+              {deleteTarget.id
+                ? "khỏi CSDL của sản phẩm này không? Hành động này không thể hoàn tác."
+                : "khỏi danh sách hiển thị không?"}
+            </p>
+
+            <div className="flex items-center justify-end gap-2.5">
+              <button
+                type="button"
+                onClick={() => setDeleteTarget(null)}
+                disabled={deleting}
+                className="px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition disabled:opacity-50"
               >
-                <SelectTrigger className="text-xs">
-                  <SelectValue placeholder="Chọn nhóm" />
-                </SelectTrigger>
-                <SelectContent>
-                  {groups.map((g) => (
-                    <SelectItem
-                      key={g.id}
-                      value={g.id.toString()}
-                      className="text-xs"
-                    >
-                      {g.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label className="text-xs">Tên Thuộc Tính (spec_keys.name)</Label>
-              <Input
-                placeholder="VD: NFC, Chống nước, Bluetooth..."
-                value={newKeyName}
-                onChange={(e) => setNewKeyName(e.target.value)}
-                className="text-xs"
-              />
+                Hủy bỏ
+              </button>
+              <button
+                type="button"
+                onClick={handleExecuteDelete}
+                disabled={deleting}
+                className="px-4 py-2 text-xs font-medium bg-rose-600 hover:bg-rose-700 text-white rounded-lg shadow-sm transition disabled:opacity-50 flex items-center gap-1.5"
+              >
+                {deleting ? "Đang xóa..." : "Xác nhận xóa"}
+              </button>
             </div>
           </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsAddKeyOpen(false)}
-              className="text-xs"
-            >
-              Hủy
-            </Button>
-            <Button
-              size="sm"
-              onClick={handleCreateKey}
-              className="text-xs bg-violet-600 hover:bg-violet-700 text-white"
-            >
-              Thêm Thuộc Tính
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* --- DIALOG 3: THÊM ĐƠN VỊ MỚI (units) --- */}
-      <Dialog open={isAddUnitOpen} onOpenChange={setIsAddUnitOpen}>
-        <DialogContent className="sm:max-w-[400px]">
-          <DialogHeader>
-            <DialogTitle className="text-base font-bold">
-              Thêm Đơn Vị Đo Lường Mới
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3 py-2">
-            <div className="space-y-1.5">
-              <Label className="text-xs">Tên Đơn Vị (units.name)</Label>
-              <Input
-                placeholder="VD: Nit, Gram, Millimeter..."
-                value={newUnitName}
-                onChange={(e) => setNewUnitName(e.target.value)}
-                className="text-xs"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs">Ký Hiệu Hiển Thị (units.symbol)</Label>
-              <Input
-                placeholder="VD: nits, g, mm..."
-                value={newUnitSymbol}
-                onChange={(e) => setNewUnitSymbol(e.target.value)}
-                className="text-xs"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsAddUnitOpen(false)}
-              className="text-xs"
-            >
-              Hủy
-            </Button>
-            <Button
-              size="sm"
-              onClick={handleCreateUnit}
-              className="text-xs bg-violet-600 hover:bg-violet-700 text-white"
-            >
-              Thêm Đơn Vị
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </TabsContent>
+        </div>
+      )}
+    </div>
   );
 }

@@ -177,17 +177,17 @@ export function SpecKeysSection() {
                 </tr>
               ) : (
                 <>
-                  {specKeys.map((item) => (
+                  {specKeys.map((item, index) => (
                     <tr
                       key={item.id}
                       className={`${tr} border-b border-slate-50/80 hover:bg-slate-50/50 transition-colors`}
                       style={{ height: ROW_HEIGHT }}
                     >
                       <td className={`${td} text-slate-400 px-4 py-2`}>
-                        #{item.id}
+                        #{index + 1}
                       </td>
-                      <td className={`${td} px-4 py-2`}>
-                        <span className="text-xs font-medium text-teal-600 bg-teal-50 px-2.5 py-1 rounded-full border border-teal-100">
+                      <td className={`${td} px-4 py-3 whitespace-nowrap`}>
+                        <span className="inline-flex items-center px-3 py-1 rounded-md text-xs font-semibold text-teal-700 bg-teal-50/80 border border-teal-200/60 shadow-sm transition-colors hover:bg-teal-100/80">
                           {item.spec_groups?.name || `Nhóm ${item.group_id}`}
                         </span>
                       </td>
