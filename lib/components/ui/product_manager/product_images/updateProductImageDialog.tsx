@@ -1,11 +1,10 @@
-// CreateProductImageDialog.tsx
-
 "use client";
 
-import { ImagePlus, Loader2, Sparkles, Trash2 } from "lucide-react";
+import { ImagePlus, Loader2, RefreshCw, Star, Trash2 } from "lucide-react";
 import { CldImage, CldUploadWidget } from "next-cloudinary";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
+import type { product_images } from "@/app/generated/prisma/client";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -17,50 +16,56 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 
-interface CreateProductImageDialogProps {
+interface UpdateProductImageDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  productId: number;
-  variantId?: number | null; // Nếu truyền vào sẽ là ảnh theo biến thể/màu, nếu null/undefined là ảnh chung
-  colorName?: string; // Tên màu (nếu có) để hiển thị UI thân thiện hơn
+  image: product_images | null; // Đối tượng hình ảnh cần chỉnh sửa
+  colorName?: string; // Tên màu (nếu là ảnh biến thể/màu)
   onSuccess?: () => void;
 }
 
-export function CreateProductImageDialog({
+export function UpdateProductImageDialog({
   open = false,
   onOpenChange,
-  productId,
-  variantId = null,
+  image,
   colorName,
   onSuccess,
-}: CreateProductImageDialogProps) {
+}: UpdateProductImageDialogProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // States của form hình ảnh
+  // States form hình ảnh
   const [imageUrl, setImageUrl] = useState("");
   const [isFeatured, setIsFeatured] = useState(false);
 
-  // Pattern React: Reset state trực tiếp khi đóng/mở Dialog mà không dùng useEffect
-  const [prevIsOpen, setPrevIsOpen] = useState(open);
-  if (open !== prevIsOpen) {
-    setPrevIsOpen(open);
-    if (!open) {
+  // Điền dữ liệu cũ vào Form khi Dialog mở ra hoặc image thay đổi
+  useEffect(() => {
+    if (open && image) {
+      setImageUrl(image.image_url || "");
+      setIsFeatured(Boolean(image.is_featured));
+      setErrorMessage(null);
+    }
+  }, [open, image]);
+
+  // Reset state khi đóng Dialog
+  const handleOpenChange = (newOpen: boolean) => {
+    if (!newOpen) {
       setImageUrl("");
       setIsFeatured(false);
       setIsUploading(false);
       setIsLoading(false);
       setErrorMessage(null);
-    } else {
-      setErrorMessage(null);
     }
-  }
+    onOpenChange(newOpen);
+  };
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!image) return;
+
     if (!imageUrl) {
-      setErrorMessage("Vui lòng tải lên một hình ảnh.");
+      setErrorMessage("Vui lòng tải lên hoặc chọn một hình ảnh.");
       return;
     }
 
@@ -68,53 +73,59 @@ export function CreateProductImageDialog({
     setIsLoading(true);
 
     const payload = {
-      product_id: productId,
-      variant_id: variantId || null,
       image_url: imageUrl,
-      is_featured: variantId ? false : isFeatured, // Ảnh biến thể không đặt làm đại diện chung
+      // Cho phép cập nhật is_featured cho cả ảnh chung lẫn ảnh biến thể
+      is_featured: isFeatured,
     };
 
     try {
-      const response = await fetch("/api/product_manager/product_images", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      const response = await fetch(
+        `/api/product_manager/product_images/${image.id}`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
         },
-        body: JSON.stringify(payload),
-      });
+      );
 
       const result = await response.json();
 
       if (response.ok && result.success) {
-        onOpenChange(false);
+        handleOpenChange(false);
         if (onSuccess) onSuccess();
       } else {
-        setErrorMessage(result.message || "Không thể thêm hình ảnh này");
+        setErrorMessage(result.message || "Không thể cập nhật hình ảnh này.");
       }
     } catch (err) {
-      setErrorMessage("Lỗi hệ thống khi gửi yêu cầu thêm ảnh");
+      setErrorMessage("Lỗi hệ thống khi gửi yêu cầu cập nhật ảnh.");
     } finally {
       setIsLoading(false);
     }
   }
 
+  if (!image) return null;
+
+  const isColorImage = Boolean(image.variant_id);
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-[440px] bg-white border border-slate-100 p-5 gap-4">
         <form onSubmit={handleSubmit} className="space-y-4">
           <DialogHeader className="space-y-1">
             <div className="flex items-center gap-3 mb-1">
               <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center shrink-0 text-slate-700">
-                <Sparkles size={20} />
+                <RefreshCw size={20} />
               </div>
               <div>
                 <DialogTitle className="font-semibold text-slate-800 text-sm">
-                  {colorName
-                    ? `Thêm ảnh cho màu: ${colorName}`
-                    : "Thêm ảnh sản phẩm mới"}
+                  Cập nhật hình ảnh{" "}
+                  {isColorImage && colorName ? `(${colorName})` : "sản phẩm"}
                 </DialogTitle>
                 <DialogDescription className="text-xs text-slate-500">
-                  Tải hình ảnh lên Cloudinary để liên kết với sản phẩm này.
+                  Thay đổi hình ảnh trên Cloudinary hoặc đặt làm ảnh đại diện
+                  chính.
                 </DialogDescription>
               </div>
             </div>
@@ -122,13 +133,13 @@ export function CreateProductImageDialog({
 
           {/* Form Fields Container */}
           <div className="space-y-4">
-            {/* Field: Upload Ảnh bằng CldUploadWidget */}
+            {/* Field: Upload/Thay đổi ảnh bằng CldUploadWidget */}
             <div className="space-y-1.5">
               <Label className="text-xs font-medium text-slate-700">
                 Hình ảnh sản phẩm <span className="text-red-500">*</span>
               </Label>
               <CldUploadWidget
-                uploadPreset="product_images" // Cấu hình preset trong Dashboard Cloudinary của bạn
+                uploadPreset="product_images"
                 options={{
                   maxFiles: 1,
                   sources: ["local", "url", "camera"],
@@ -188,22 +199,18 @@ export function CreateProductImageDialog({
                         disabled={isUploading}
                         className="text-slate-700 hover:text-slate-900 font-medium text-left transition-colors"
                       >
-                        {imageUrl ? "Đổi ảnh khác" : "Tải ảnh lên"}
+                        {imageUrl ? "Đổi sang ảnh khác" : "Tải ảnh lên"}
                       </button>
 
-                      {imageUrl ? (
+                      {imageUrl && (
                         <button
                           type="button"
                           onClick={() => setImageUrl("")}
                           className="text-red-500 hover:text-red-600 flex items-center gap-1 text-left transition-colors"
                         >
                           <Trash2 size={12} />
-                          Xóa ảnh
+                          Xóa ảnh hiện tại
                         </button>
-                      ) : (
-                        <span className="text-slate-400">
-                          Hỗ trợ định dạng JPG, PNG, WEBP
-                        </span>
                       )}
                     </div>
                   </div>
@@ -211,22 +218,34 @@ export function CreateProductImageDialog({
               </CldUploadWidget>
             </div>
 
-            {/* Field: Đặt làm ảnh đại diện (Chỉ hiển thị với ảnh chung) */}
-            {!variantId && (
-              <div className="flex items-center space-x-2 pt-1">
+            {/* Field: Checkbox Đặt làm ảnh đại diện (Hiển thị cho TẤT CẢ các ảnh) */}
+            <div className="p-3 bg-slate-50 border border-slate-100 rounded-lg space-y-1">
+              <div className="flex items-center space-x-2">
                 <Checkbox
-                  id="is_featured"
+                  id="edit_is_featured"
                   checked={isFeatured}
                   onCheckedChange={(checked) => setIsFeatured(!!checked)}
                 />
                 <Label
-                  htmlFor="is_featured"
-                  className="text-xs font-medium text-slate-700 cursor-pointer"
+                  htmlFor="edit_is_featured"
+                  className="text-xs font-medium text-slate-800 cursor-pointer flex items-center gap-1.5"
                 >
+                  <Star
+                    size={14}
+                    className={
+                      isFeatured
+                        ? "fill-amber-400 text-amber-500"
+                        : "text-slate-400"
+                    }
+                  />
                   Đặt làm ảnh đại diện sản phẩm (Featured Image)
                 </Label>
               </div>
-            )}
+              <p className="text-[11px] text-slate-500 pl-6">
+                Ảnh đại diện sẽ hiển thị ưu tiên trên danh sách sản phẩm và
+                trang cửa hàng.
+              </p>
+            </div>
 
             {/* Banner hiển thị lỗi */}
             {errorMessage && (
@@ -241,7 +260,7 @@ export function CreateProductImageDialog({
             <Button
               type="button"
               variant="ghost"
-              onClick={() => onOpenChange(false)}
+              onClick={() => handleOpenChange(false)}
               disabled={isLoading || isUploading}
               className="px-3.5 py-1.5 h-auto text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
             >
@@ -253,7 +272,7 @@ export function CreateProductImageDialog({
               className="inline-flex items-center gap-1.5 px-3.5 py-1.5 h-auto text-xs font-medium text-white bg-slate-900 hover:bg-slate-800 rounded-lg disabled:opacity-50 transition-colors shadow-sm"
             >
               {isLoading && <Loader2 size={14} className="animate-spin" />}
-              {isLoading ? "Đang lưu..." : "Thêm ảnh"}
+              {isLoading ? "Đang cập nhật..." : "Lưu thay đổi"}
             </Button>
           </div>
         </form>

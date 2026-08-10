@@ -1,5 +1,10 @@
+// app/api/product_manager/product_images/[id]/route.ts
+
 import type { product_images } from "@/app/generated/prisma/client";
-import { productImageService } from "@/lib/services/products/product_image.service";
+import {
+  productImageService,
+  type UpdateProductImageInput,
+} from "@/lib/services/products/product_image.service";
 import type { ApiResponse } from "@/lib/types/public/types";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -7,89 +12,90 @@ interface RouteParams {
   params: Promise<{ id: string }>;
 }
 
-/**
- * PUT: Cập nhật thông tin ảnh hoặc Đặt làm ảnh Đại diện
- * Body: { is_featured?: boolean, image_url?: string, variant_id?: number | null, action?: "set_featured" }
- */
-export async function PUT(req: NextRequest, { params }: RouteParams) {
+// PATCH /api/product_manager/product_images/[id]
+export async function PATCH(req: NextRequest, { params }: RouteParams) {
   try {
-    const { id: idStr } = await params;
-    const id = Number(idStr);
+    const { id } = await params;
+    const imageId = Number(id);
 
-    if (isNaN(id)) {
+    if (isNaN(imageId)) {
       return NextResponse.json<ApiResponse<null>>(
-        { success: false, message: "ID ảnh không hợp lệ" },
+        { success: false, message: "ID hình ảnh không hợp lệ" },
         { status: 400 },
       );
     }
 
-    const body = await req.json();
+    const body = (await req
+      .json()
+      .catch(() => null)) as UpdateProductImageInput;
 
-    // Trường hợp 1: Set ảnh làm Thumbnail chính (is_featured = true)
-    if (body.action === "set_featured" || body.is_featured === true) {
-      if (!body.product_id) {
-        return NextResponse.json<ApiResponse<null>>(
-          { success: false, message: "Thiếu product_id khi đặt ảnh đại diện" },
-          { status: 400 },
-        );
-      }
-
-      await productImageService.setFeaturedImage(body.product_id, id);
-
-      return NextResponse.json<ApiResponse<null>>({
-        success: true,
-        message: "Cập nhật ảnh đại diện thành công",
-      });
+    if (!body) {
+      return NextResponse.json<ApiResponse<null>>(
+        { success: false, message: "Dữ liệu cập nhật không hợp lệ" },
+        { status: 400 },
+      );
     }
 
-    // Trường hợp 2: Update thông tin ảnh bình thường
-    const updatedImage = await productImageService.updateProductImage(id, {
-      image_url: body.image_url,
-      is_featured: body.is_featured,
-      variant_id: body.variant_id,
-    });
+    const updatedImage = await productImageService.updateProductImage(
+      imageId,
+      body,
+    );
 
     return NextResponse.json<ApiResponse<product_images>>({
       success: true,
-      message: "Cập nhật thông tin hình ảnh thành công",
+      message: "Cập nhật hình ảnh thành công",
       data: updatedImage,
     });
   } catch (err) {
-    if (err instanceof Error && err.message === "NOT_FOUND") {
-      return NextResponse.json<ApiResponse<null>>(
-        { success: false, message: "Không tìm thấy hình ảnh" },
-        { status: 404 },
-      );
+    if (err instanceof Error) {
+      if (err.message === "NOT_FOUND") {
+        return NextResponse.json<ApiResponse<null>>(
+          { success: false, message: "Không tìm thấy hình ảnh" },
+          { status: 404 },
+        );
+      }
+      if (err.message === "VARIANT_NOT_FOUND") {
+        return NextResponse.json<ApiResponse<null>>(
+          {
+            success: false,
+            message: "Biến thể hoặc Màu sắc chỉ định không tồn tại",
+          },
+          { status: 404 },
+        );
+      }
+      if (err.message === "RELATED_ENTITY_NOT_FOUND") {
+        return NextResponse.json<ApiResponse<null>>(
+          { success: false, message: "Dữ liệu liên quan không hợp lệ" },
+          { status: 400 },
+        );
+      }
     }
-    if (err instanceof Error && err.message === "RELATED_ENTITY_NOT_FOUND") {
-      return NextResponse.json<ApiResponse<null>>(
-        { success: false, message: "Không tìm thấy thông tin phụ thuộc" },
-        { status: 400 },
-      );
-    }
+
+    console.error("PATCH API product_images/[id] Error:", err);
     return NextResponse.json<ApiResponse<null>>(
-      { success: false, message: "Lỗi server" },
+      {
+        success: false,
+        message: "Lỗi hệ thống không thể cập nhật hình ảnh",
+      },
       { status: 500 },
     );
   }
 }
 
-/**
- * DELETE: Xóa 1 tấm ảnh theo ID
- */
+// DELETE /api/product_manager/product_images/[id]
 export async function DELETE(_req: NextRequest, { params }: RouteParams) {
   try {
-    const { id: idStr } = await params;
-    const id = Number(idStr);
+    const { id } = await params;
+    const imageId = Number(id);
 
-    if (isNaN(id)) {
+    if (isNaN(imageId)) {
       return NextResponse.json<ApiResponse<null>>(
-        { success: false, message: "ID ảnh không hợp lệ" },
+        { success: false, message: "ID hình ảnh không hợp lệ" },
         { status: 400 },
       );
     }
 
-    const deletedImage = await productImageService.deleteProductImage(id);
+    const deletedImage = await productImageService.deleteProductImage(imageId);
 
     return NextResponse.json<ApiResponse<product_images>>({
       success: true,
@@ -97,23 +103,30 @@ export async function DELETE(_req: NextRequest, { params }: RouteParams) {
       data: deletedImage,
     });
   } catch (err) {
-    if (err instanceof Error && err.message === "NOT_FOUND") {
-      return NextResponse.json<ApiResponse<null>>(
-        { success: false, message: "Không tìm thấy hình ảnh cần xóa" },
-        { status: 404 },
-      );
+    if (err instanceof Error) {
+      if (err.message === "NOT_FOUND") {
+        return NextResponse.json<ApiResponse<null>>(
+          { success: false, message: "Hình ảnh không tồn tại" },
+          { status: 404 },
+        );
+      }
+      if (err.message === "IN_USE") {
+        return NextResponse.json<ApiResponse<null>>(
+          {
+            success: false,
+            message: "Hình ảnh đang được sử dụng, không thể xóa",
+          },
+          { status: 409 },
+        );
+      }
     }
-    if (err instanceof Error && err.message === "IN_USE") {
-      return NextResponse.json<ApiResponse<null>>(
-        {
-          success: false,
-          message: "Hình ảnh đang được sử dụng, không thể xóa",
-        },
-        { status: 409 },
-      );
-    }
+
+    console.error("DELETE API product_images/[id] Error:", err);
     return NextResponse.json<ApiResponse<null>>(
-      { success: false, message: "Lỗi server" },
+      {
+        success: false,
+        message: "Lỗi hệ thống không thể xóa hình ảnh",
+      },
       { status: 500 },
     );
   }

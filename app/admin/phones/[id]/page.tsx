@@ -163,7 +163,7 @@ export default function PhoneDetailPage() {
           <TabsList className="flex h-auto w-full justify-start gap-2 bg-transparent p-0 overflow-x-auto">
             <TabsTrigger
               value="general"
-              className="flex items-center gap-2 rounded-lg border border-slate-200/80 bg-white px-4 py-2.5 text-xs font-semibold text-slate-600 shadow-sm transition-all hover:bg-slate-50 data-[state=active]:border-blue-600 data-[state=active]:bg-blue-50 data-[state=active]:text-blue-600"
+              //className="flex items-center gap-2 rounded-lg border border-slate-200/80 bg-white px-4 py-2.5 text-xs font-semibold text-slate-600 shadow-sm transition-all hover:bg-slate-50 data-active:border-blue-600 data-active:bg-blue-50 data-active:text-blue-600"
             >
               <FileText className="h-4 w-4" />
               <span>Thông tin chung</span>
@@ -171,7 +171,7 @@ export default function PhoneDetailPage() {
 
             <TabsTrigger
               value="skus"
-              className="flex items-center gap-2 rounded-lg border border-slate-200/80 bg-white px-4 py-2.5 text-xs font-semibold text-slate-600 shadow-sm transition-all hover:bg-slate-50 data-[state=active]:border-indigo-600 data-[state=active]:bg-indigo-50 data-[state=active]:text-indigo-600"
+              //className="flex items-center gap-2 rounded-lg border border-slate-200/80 bg-white px-4 py-2.5 text-xs font-semibold text-slate-600 shadow-sm transition-all hover:bg-slate-50 data-active:border-indigo-600 data-active:bg-indigo-50 data-active:text-indigo-600"
             >
               <Layers className="h-4 w-4" />
               <span>Biến thể (SKUs)</span>
@@ -182,7 +182,7 @@ export default function PhoneDetailPage() {
 
             <TabsTrigger
               value="specs"
-              className="flex items-center gap-2 rounded-lg border border-slate-200/80 bg-white px-4 py-2.5 text-xs font-semibold text-slate-600 shadow-sm transition-all hover:bg-slate-50 data-[state=active]:border-violet-600 data-[state=active]:bg-violet-50 data-[state=active]:text-violet-600"
+              //className="flex items-center gap-2 rounded-lg border border-slate-200/80 bg-white px-4 py-2.5 text-xs font-semibold text-slate-600 shadow-sm transition-all hover:bg-slate-50 data-active:border-violet-600 data-active:bg-violet-50 data-active:text-violet-600"
             >
               <Sliders className="h-4 w-4" />
               <span>Thông số kỹ thuật</span>
@@ -190,7 +190,7 @@ export default function PhoneDetailPage() {
 
             <TabsTrigger
               value="gallery"
-              className="flex items-center gap-2 rounded-lg border border-slate-200/80 bg-white px-4 py-2.5 text-xs font-semibold text-slate-600 shadow-sm transition-all hover:bg-slate-50 data-[state=active]:border-amber-600 data-[state=active]:bg-amber-50 data-[state=active]:text-amber-600"
+              //className="flex items-center gap-2 rounded-lg border border-slate-200/80 bg-white px-4 py-2.5 text-xs font-semibold text-slate-600 shadow-sm transition-all hover:bg-slate-50 data-active:border-amber-600 data-active:bg-amber-50 data-active:text-amber-600"
             >
               <ImageIcon className="h-4 w-4" />
               <span>Thư viện ảnh</span>
@@ -200,11 +200,11 @@ export default function PhoneDetailPage() {
             </TabsTrigger>
           </TabsList>
         </div>
-
         {/* DÒNG 2: NỘI DUNG TABS */}
 
         <div className="w-full shrink-0">
           {/* TAB 1: THÔNG TIN CHUNG */}
+
           <TabProductInfo
             product={product}
             onUpdateSuccess={(updatedProduct) => {
@@ -215,8 +215,13 @@ export default function PhoneDetailPage() {
             }}
           />
 
-          {/* TAB 2: BIẾN THỂ SKUS */}
-          <TabProductVariantInfo product_id={product.id} name={product.name} />
+          <TabsContent value="skus" className="mt-4 focus-visible:outline-none">
+            {/* TAB 2: BIẾN THỂ SKUS */}
+            <TabProductVariantInfo
+              product_id={product.id}
+              name={product.name}
+            />
+          </TabsContent>
 
           {/* TAB 3: THÔNG SỐ KỸ THUẬT */}
           <TabsContent

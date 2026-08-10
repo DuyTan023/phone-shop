@@ -109,9 +109,9 @@ export default function TabProductInfo({
   };
 
   return (
-    <div className="w-full shrink-0">
-      <form onSubmit={form.handleSubmit(onSubmit)}>
-        <TabsContent value="general" className="m-0 focus-visible:outline-none">
+    <TabsContent value="general" className="m-0 focus-visible:outline-none">
+      <div className="w-full shrink-0">
+        <form onSubmit={form.handleSubmit(onSubmit)}>
           <div className="rounded-xl border border-slate-200/80 bg-white shadow-sm overflow-hidden">
             <div className="p-5 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
               <div>
@@ -222,8 +222,8 @@ export default function TabProductInfo({
               </div>
             </div>
           </div>
-        </TabsContent>
-      </form>
-    </div>
+        </form>
+      </div>
+    </TabsContent>
   );
 }

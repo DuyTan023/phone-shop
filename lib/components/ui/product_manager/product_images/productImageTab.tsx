@@ -3,6 +3,7 @@
 import {
   Check,
   CheckCircle2,
+  Eye,
   ImagePlus,
   Info,
   Layers,
@@ -34,13 +35,13 @@ import {
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { CreateProductImageDialog } from "./CreateProductImageDialog";
+import { UpdateProductImageDialog } from "./updateProductImageDialog";
 
-interface ColorOption {
-  id?: number | string;
-  variant_id?: number;
+export interface ColorOption {
   color_id: number;
   color_name: string;
   hex_code?: string;
+  variant_id: number; // variant_id đại diện cho màu sắc này
 }
 
 interface ProductImagesTabProps {
@@ -48,45 +49,83 @@ interface ProductImagesTabProps {
 }
 
 export default function ProductImagesTab({ productId }: ProductImagesTabProps) {
-  // State dữ liệu chung
+  // 1. Quản lý State Dữ liệu
   const [generalImages, setGeneralImages] = useState<product_images[]>([]);
+  const [featuredImages, setFeaturedImages] = useState<product_images | null>(
+    null,
+  );
   const [colorOptions, setColorOptions] = useState<ColorOption[]>([]);
 
-  // State quản lý việc chọn màu sắc
-  const [selectedColorId, setSelectedColorId] = useState<number>();
+  // State màu/variant đang được chọn trong Combobox
+  const [selectedColorOption, setSelectedColorOption] =
+    useState<ColorOption | null>(null);
 
-  // State ảnh theo màu
+  // State danh sách ảnh theo variant_id đã chọn
   const [colorImages, setColorImages] = useState<product_images[]>([]);
   const [loadingColorImages, setLoadingColorImages] = useState<boolean>(false);
 
-  // State loading tổng & action
+  // State loading chung & action
   const [loading, setLoading] = useState<boolean>(Boolean(productId));
   const [actionLoadingId, setActionLoadingId] = useState<number | null>(null);
 
-  // Modal Upload
+  // State Modal Upload
   const [isUploadOpen, setIsUploadOpen] = useState<boolean>(false);
-  const [uploadColorId, setUploadColorId] = useState<number | null>(null);
-  const [imageUrlInput, setImageUrlInput] = useState<string>("");
-  const [uploading, setUploading] = useState<boolean>(false);
+  const [uploadVariantId, setUploadVariantId] = useState<number | null>(null);
+  const [uploadColorName, setUploadColorName] = useState<string | undefined>(
+    undefined,
+  );
 
-  // 1. Tải danh sách ảnh chung
+  // -------------------------------------------------------------
+  // 2. Các hàm Fetch dữ liệu API
+  // -------------------------------------------------------------
+
+  // Tải danh sách ảnh chung (variant_id IS NULL hoặc type=general)
   const fetchGeneralImages = useCallback(async () => {
     try {
-      const res = await fetch(
-        `/api/product_manager/product_images?product_id=${productId}&type=general`,
+      const [generalRes, featuredRes] = await Promise.all([
+        fetch(
+          `/api/product_manager/product_images?product_id=${productId}&type=general`,
+          {
+            cache: "no-store",
+          },
+        ),
+        fetch(
+          `/api/product_manager/product_images?product_id=${productId}&type=featured`,
+          {
+            cache: "no-store",
+          },
+        ),
+      ]);
+
+      const generalJson = await generalRes.json();
+      const featuredJson = await featuredRes.json();
+
+      const general: product_images[] = generalJson.success
+        ? generalJson.data || []
+        : [];
+
+      const featured: product_images | null = featuredJson.success
+        ? featuredJson.data || null
+        : null;
+
+      setFeaturedImages(featured);
+
+      // Gộp featured vào danh sách general
+      setGeneralImages(
+        featured
+          ? [featured, ...general.filter((img) => img.id !== featured.id)]
+          : general,
       );
-      const json = await res.json();
-      if (json.success) setGeneralImages(json.data || []);
     } catch (err) {
-      console.error("Lỗi lấy danh sách ảnh chung:", err);
+      console.error("Lỗi lấy danh sách ảnh:", err);
     }
   }, [productId]);
 
-  // 2. Tải danh sách màu cho Combobox
+  // Tải danh sách màu sắc (kèm variant_id đại diện) cho Combobox
   const fetchColorOptions = useCallback(async () => {
     try {
       const res = await fetch(
-        `/api/product_manager/product_images?product_id=${productId}&type=color_options`,
+        `/api/product_manager/product_images/color-options?product_id=${productId}`,
       );
       const json = await res.json();
       if (json.success) setColorOptions(json.data || []);
@@ -95,17 +134,17 @@ export default function ProductImagesTab({ productId }: ProductImagesTabProps) {
     }
   }, [productId]);
 
-  // 3. Tải danh sách ảnh theo màu khi biến selectedVariantId thay đổi
-  const fetchImagesByColorId = useCallback(
-    async (color_id: number) => {
-      if (!color_id) {
+  // Tải danh sách ảnh theo variant_id đại diện
+  const fetchImagesByVariantId = useCallback(
+    async (variantId: number) => {
+      if (!variantId) {
         setColorImages([]);
         return;
       }
       try {
         setLoadingColorImages(true);
         const res = await fetch(
-          `/api/product_manager/product_images?product_id=${productId}&color_id=${color_id}`,
+          `/api/product_manager/product_images?product_id=${productId}&variant_id=${variantId}`,
         );
         const json = await res.json();
         if (json.success) {
@@ -114,7 +153,7 @@ export default function ProductImagesTab({ productId }: ProductImagesTabProps) {
           setColorImages([]);
         }
       } catch (err) {
-        console.error("Lỗi lấy ảnh theo màu:", err);
+        console.error("Lỗi lấy ảnh theo variant_id:", err);
         setColorImages([]);
       } finally {
         setLoadingColorImages(false);
@@ -123,7 +162,7 @@ export default function ProductImagesTab({ productId }: ProductImagesTabProps) {
     [productId],
   );
 
-  // Khởi tạo dữ liệu ban đầu
+  // Khởi tạo dữ liệu khi Component Mount / productId thay đổi
   useEffect(() => {
     if (!productId) return;
     let isSubscribed = true;
@@ -144,14 +183,21 @@ export default function ProductImagesTab({ productId }: ProductImagesTabProps) {
     };
   }, [productId, fetchGeneralImages, fetchColorOptions]);
 
-  // Xử lý khi chọn màu từ Combobox
-  const handleSelectColor = (color_id: number) => {
-    const nextVal = color_id;
-    setSelectedColorId(nextVal);
-    fetchImagesByColorId(nextVal);
+  // -------------------------------------------------------------
+  // 3. Các hàm Xử lý Sự kiện (Event Handlers)
+  // -------------------------------------------------------------
+
+  // Chọn màu/variant từ Combobox
+  const handleSelectColorOption = (option: ColorOption | null) => {
+    setSelectedColorOption(option);
+    if (option?.variant_id) {
+      fetchImagesByVariantId(option.variant_id);
+    } else {
+      setColorImages([]);
+    }
   };
 
-  // Thiết lập ảnh đại diện
+  // Đặt làm ảnh đại diện (Đã được cập nhật tự động load không cần reload)
   const handleSetFeatured = async (imageId: number) => {
     try {
       setActionLoadingId(imageId);
@@ -167,7 +213,29 @@ export default function ProductImagesTab({ productId }: ProductImagesTabProps) {
         },
       );
       const json = await res.json();
-      if (json.success) await fetchGeneralImages();
+      if (json.success) {
+        // Cập nhật Optimistic trên UI ngay lập tức
+        setGeneralImages((prevImages) => {
+          const updated = prevImages.map((img) => ({
+            ...img,
+            is_featured: img.id === imageId,
+          }));
+
+          // Sắp xếp đưa ảnh được chọn làm đại diện lên đầu danh sách
+          const featuredItem = updated.find((img) => img.id === imageId);
+          const remainingItems = updated.filter((img) => img.id !== imageId);
+
+          return featuredItem ? [featuredItem, ...remainingItems] : updated;
+        });
+
+        // Gọi lại API fetchGeneralImages để đồng bộ chuẩn xác với cơ sở dữ liệu
+        await fetchGeneralImages();
+
+        // Nếu đang chọn danh sách ảnh theo màu, làm mới lại danh sách đó luôn
+        if (selectedColorOption?.variant_id) {
+          await fetchImagesByVariantId(selectedColorOption.variant_id);
+        }
+      }
     } catch (err) {
       console.error("Lỗi đặt ảnh đại diện:", err);
     } finally {
@@ -186,8 +254,8 @@ export default function ProductImagesTab({ productId }: ProductImagesTabProps) {
       );
       const json = await res.json();
       if (json.success) {
-        if (isColorImage && selectedColorId) {
-          await fetchImagesByColorId(selectedColorId);
+        if (isColorImage && selectedColorOption?.variant_id) {
+          await fetchImagesByVariantId(selectedColorOption.variant_id);
         } else {
           await fetchGeneralImages();
         }
@@ -199,71 +267,25 @@ export default function ProductImagesTab({ productId }: ProductImagesTabProps) {
     }
   };
 
-  // Mở modal upload
-  const openUploadModal = (color_id: number | null = null) => {
-    setUploadColorId(color_id);
-    setImageUrlInput("");
+  // Mở modal upload ảnh
+  const openUploadModal = (option: ColorOption | null = null) => {
+    if (option) {
+      setUploadVariantId(option.variant_id);
+      setUploadColorName(option.color_name);
+    } else {
+      setUploadVariantId(null);
+      setUploadColorName(undefined);
+    }
     setIsUploadOpen(true);
   };
 
-  // Xử lý upload ảnh
-  const handleUploadSubmit = async () => {
-    if (!imageUrlInput.trim()) return;
-    const urls = imageUrlInput
-      .split(/[\n,]+/)
-      .map((u) => u.trim())
-      .filter((u) => u.length > 0);
-    if (urls.length === 0) return;
+  const [editingImage, setEditingImage] = useState<product_images | null>(null);
+  const [isUpdateOpen, setIsUpdateOpen] = useState(false);
 
-    try {
-      setUploading(true);
-      const body =
-        urls.length === 1
-          ? {
-              product_id: productId,
-              variant_id: uploadVariantId,
-              image_url: urls[0],
-            }
-          : {
-              product_id: productId,
-              variant_id: uploadVariantId,
-              image_urls: urls,
-            };
-
-      const res = await fetch("/api/product_manager/product_images", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-
-      const json = await res.json();
-      if (json.success) {
-        setIsUploadOpen(false);
-        setImageUrlInput("");
-        if (uploadVariantId) {
-          await fetchImagesByVariant(String(uploadVariantId));
-        } else {
-          await fetchGeneralImages();
-        }
-      }
-    } catch (err) {
-      console.error("Lỗi upload:", err);
-    } finally {
-      setUploading(false);
-    }
+  const openEditModal = (img: product_images) => {
+    setEditingImage(img);
+    setIsUpdateOpen(true);
   };
-
-  // Tìm đối tượng màu đang chọn (sử dụng so sánh kiểu String an toàn)
-  const selectedColor =
-    colorOptions.find(
-      (c) => String(c.variant_id ?? c.id) === selectedVariantId,
-    ) ?? null;
-
-  // Tìm thông tin màu sắc đang được upload trong modal
-  const currentUploadColor = colorOptions.find((c) => {
-    const id = c.variant_id ?? c.id;
-    return String(id) === String(uploadVariantId);
-  });
 
   if (loading) {
     return (
@@ -276,7 +298,7 @@ export default function ProductImagesTab({ productId }: ProductImagesTabProps) {
 
   return (
     <div className="space-y-8">
-      {/* KHỐI 1: HÌNH ẢNH CHUNG */}
+      {/* KHỐI 1: HÌNH ẢNH CHUNG SẢN PHẨM */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between pb-4">
           <div>
@@ -285,7 +307,7 @@ export default function ProductImagesTab({ productId }: ProductImagesTabProps) {
               phẩm
             </CardTitle>
             <CardDescription className="mt-1">
-              Ảnh dùng chung cho tất cả các bản (Banner, ảnh đại diện sản
+              Ảnh dùng chung cho tất cả các phiên bản (Banner, ảnh đại diện sản
               phẩm...)
             </CardDescription>
           </div>
@@ -301,11 +323,11 @@ export default function ProductImagesTab({ productId }: ProductImagesTabProps) {
           {generalImages.length === 0 ? (
             <div
               onClick={() => openUploadModal(null)}
-              className="text-center py-10 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/30"
+              className="text-center py-10 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/30 transition-colors"
             >
               <ImagePlus className="h-10 w-10 text-muted-foreground mx-auto mb-2" />
               <p className="text-sm text-muted-foreground">
-                Chưa có hình ảnh chung nào.
+                Chưa có hình ảnh chung nào. Nhấn vào đây để tải lên.
               </p>
             </div>
           ) : (
@@ -337,6 +359,7 @@ export default function ProductImagesTab({ productId }: ProductImagesTabProps) {
                           variant="secondary"
                           className="h-8 w-8"
                           onClick={() => handleSetFeatured(img.id)}
+                          title="Đặt làm ảnh đại diện"
                         >
                           <Star className="h-4 w-4" />
                         </Button>
@@ -346,6 +369,7 @@ export default function ProductImagesTab({ productId }: ProductImagesTabProps) {
                         variant="destructive"
                         className="h-8 w-8"
                         onClick={() => handleDeleteImage(img.id, false)}
+                        title="Xóa hình ảnh"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -358,32 +382,29 @@ export default function ProductImagesTab({ productId }: ProductImagesTabProps) {
         </CardContent>
       </Card>
 
-      {/* KHỐI 2: HÌNH ẢNH THEO BIẾN THỂ MÀU */}
+      {/* KHỐI 2: HÌNH ẢNH THEO MÀU SẮC */}
       <Card>
         <CardHeader className="pb-4">
           <CardTitle className="text-lg font-semibold flex items-center gap-2">
-            <CheckCircle2 className="h-5 w-5 text-primary" /> Hình ảnh theo Biến
-            thể Màu
+            <CheckCircle2 className="h-5 w-5 text-primary" /> Hình ảnh theo Màu
+            sắc
           </CardTitle>
           <CardDescription>
-            Chọn màu sắc từ Combobox bên dưới để hiển thị danh sách ảnh của màu
-            đó.
+            Chọn màu sắc từ Combobox bên dưới để hiển thị và quản lý hình ảnh
+            tương ứng.
           </CardDescription>
 
-          {/* PART 1: COMBOBOX CHỌN MÀU SẮC */}
+          {/* COMBOBOX CHỌN MÀU SẮC */}
           <div className="mt-4 p-4 border rounded-lg bg-muted/30 flex flex-col sm:flex-row items-start sm:items-end gap-4">
             <div className="grid w-full sm:w-80 gap-1.5">
               <Label className="font-medium">Chọn màu sắc:</Label>
 
               <Combobox
                 items={colorOptions}
-                value={selectedColor}
+                value={selectedColorOption}
                 itemToStringValue={(item) => item?.color_name ?? ""}
                 itemToStringLabel={(item) => item?.color_name ?? ""}
-                onValueChange={(item) => {
-                  const id = item ? (item.variant_id ?? item.id) : "";
-                  handleSelectColor(String(id));
-                }}
+                onValueChange={(item) => handleSelectColorOption(item)}
               >
                 <div className="relative w-full">
                   <ComboboxInput
@@ -399,12 +420,12 @@ export default function ProductImagesTab({ productId }: ProductImagesTabProps) {
 
                   <ComboboxList className="max-h-60 overflow-y-auto p-1">
                     {(item) => {
-                      const itemId = String(item.variant_id ?? item.id);
-                      const isSelected = selectedVariantId === itemId;
+                      const isSelected =
+                        selectedColorOption?.variant_id === item.variant_id;
 
                       return (
                         <ComboboxItem
-                          key={itemId}
+                          key={item.variant_id}
                           value={item}
                           className={cn(
                             "flex items-center gap-2 px-3 py-2 text-sm rounded-md cursor-pointer transition-colors",
@@ -426,8 +447,9 @@ export default function ProductImagesTab({ productId }: ProductImagesTabProps) {
                             />
                           )}
 
-                          {/* Đã sửa: dùng item.color_name chuẩn xác */}
-                          <span className="text-slate-800">{item.name}</span>
+                          <span className="text-slate-800">
+                            {item.color_name}
+                          </span>
                         </ComboboxItem>
                       );
                     }}
@@ -437,8 +459,8 @@ export default function ProductImagesTab({ productId }: ProductImagesTabProps) {
             </div>
 
             <Button
-              disabled={!selectedVariantId}
-              onClick={() => openUploadModal(Number(selectedVariantId))}
+              disabled={!selectedColorOption}
+              onClick={() => openUploadModal(selectedColorOption)}
               className="gap-2 w-full sm:w-auto"
             >
               <Upload className="h-4 w-4" /> Tải ảnh cho Màu này
@@ -446,9 +468,9 @@ export default function ProductImagesTab({ productId }: ProductImagesTabProps) {
           </div>
         </CardHeader>
 
-        {/* PART 2: HIỂN THỊ DANH SÁCH ẢNH THEO MÀU ĐÃ CHỌN */}
+        {/* DANH SÁCH ẢNH THEO MÀU ĐÃ CHỌN */}
         <CardContent>
-          {!selectedVariantId && (
+          {!selectedColorOption && (
             <div className="text-center py-12 border border-dashed rounded-lg bg-muted/10">
               <Info className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
               <p className="text-sm text-muted-foreground">
@@ -458,27 +480,29 @@ export default function ProductImagesTab({ productId }: ProductImagesTabProps) {
             </div>
           )}
 
-          {selectedVariantId && loadingColorImages && (
+          {selectedColorOption && loadingColorImages && (
             <div className="flex flex-col items-center justify-center py-12">
               <Loader2 className="h-6 w-6 animate-spin text-primary mb-2" />
               <p className="text-sm text-muted-foreground">
-                Đang tải ảnh của màu {selectedColor?.color_name || "đã chọn"}...
+                Đang tải ảnh của màu {selectedColorOption.color_name}...
               </p>
             </div>
           )}
 
-          {selectedVariantId && !loadingColorImages && (
+          {selectedColorOption && !loadingColorImages && (
             <div className="border rounded-lg p-4 bg-background shadow-sm space-y-4">
               <div className="flex items-center justify-between border-b pb-3">
                 <div className="flex items-center gap-2">
-                  {selectedColor?.hex_code && (
+                  {selectedColorOption.hex_code && (
                     <span
                       className="w-4 h-4 rounded-full border border-slate-300 shrink-0 shadow-sm"
-                      style={{ backgroundColor: selectedColor.hex_code }}
+                      style={{
+                        backgroundColor: selectedColorOption.hex_code,
+                      }}
                     />
                   )}
                   <span className="font-semibold text-base">
-                    Đang xem màu: {selectedColor?.name || "Không xác định"}
+                    Đang xem màu: {selectedColorOption.color_name}
                   </span>
                   <Badge variant="secondary">{colorImages.length} ảnh</Badge>
                 </div>
@@ -486,7 +510,7 @@ export default function ProductImagesTab({ productId }: ProductImagesTabProps) {
                   size="sm"
                   variant="outline"
                   className="gap-1.5"
-                  onClick={() => openUploadModal(Number(selectedVariantId))}
+                  onClick={() => openUploadModal(selectedColorOption)}
                 >
                   <ImagePlus className="h-4 w-4" /> Thêm ảnh
                 </Button>
@@ -494,13 +518,13 @@ export default function ProductImagesTab({ productId }: ProductImagesTabProps) {
 
               {colorImages.length === 0 ? (
                 <div
-                  onClick={() => openUploadModal(Number(selectedVariantId))}
-                  className="border-2 border-dashed rounded-md p-8 text-center cursor-pointer hover:bg-muted/30"
+                  onClick={() => openUploadModal(selectedColorOption)}
+                  className="border-2 border-dashed rounded-md p-8 text-center cursor-pointer hover:bg-muted/30 transition-colors"
                 >
                   <ImagePlus className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
                   <p className="text-sm text-muted-foreground">
-                    Màu <strong>{selectedColor?.color_name || "này"}</strong>{" "}
-                    chưa có ảnh. Nhấp vào đây để thêm.
+                    Màu <strong>{selectedColorOption.color_name}</strong> chưa
+                    có ảnh. Nhấp vào đây để thêm.
                   </p>
                 </div>
               ) : (
@@ -512,23 +536,37 @@ export default function ProductImagesTab({ productId }: ProductImagesTabProps) {
                     >
                       <img
                         src={img.image_url}
-                        alt={selectedColor?.color_name || "Color image"}
+                        alt={selectedColorOption.color_name}
                         className="w-full h-full object-cover"
                       />
+                      {img.is_featured && (
+                        <Badge className="absolute top-2 left-2 bg-yellow-500 text-white gap-1 text-[10px]">
+                          <Star className="h-3 w-3 fill-current" /> Đại diện
+                        </Badge>
+                      )}
                       {actionLoadingId === img.id ? (
                         <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
                           <Loader2 className="h-5 w-5 animate-spin text-white" />
                         </div>
                       ) : (
-                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                          <Button
-                            size="icon"
-                            variant="destructive"
-                            className="h-7 w-7"
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-3 transition-all duration-200">
+                          <button
+                            type="button"
+                            className="h-9 w-9 rounded-lg bg-red-500 text-white flex items-center justify-center shadow-md transition-all duration-200 hover:bg-red-600 hover:scale-110 hover:shadow-lg active:scale-95"
                             onClick={() => handleDeleteImage(img.id, true)}
+                            title="Xóa ảnh"
                           >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+
+                          <button
+                            type="button"
+                            className="h-9 w-9 rounded-lg bg-blue-500 text-white flex items-center justify-center shadow-md transition-all duration-200 hover:bg-blue-600 hover:scale-110 hover:shadow-lg active:scale-95"
+                            onClick={() => openEditModal(img)}
+                            title="Xem / chỉnh sửa ảnh"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </button>
                         </div>
                       )}
                     </div>
@@ -540,20 +578,38 @@ export default function ProductImagesTab({ productId }: ProductImagesTabProps) {
         </CardContent>
       </Card>
 
-      {/* MODAL UPLOAD ẢNH */}
+      {/* DIALOG UPLOAD ẢNH */}
       <CreateProductImageDialog
         open={isUploadOpen}
         onOpenChange={setIsUploadOpen}
         productId={productId}
-        variantId={uploadVariantId}
-        colorName={currentUploadColor?.color_name}
+        variantId={uploadVariantId} // Truyền variant_id đại diện sang Dialog
+        colorName={uploadColorName}
         onSuccess={() => {
-          // Tự động load lại danh sách tương ứng sau khi đăng ảnh thành công
           if (uploadVariantId) {
-            fetchImagesByVariant(String(uploadVariantId));
+            fetchImagesByVariantId(uploadVariantId);
           } else {
             fetchGeneralImages();
           }
+        }}
+      />
+
+      <UpdateProductImageDialog
+        open={isUpdateOpen}
+        onOpenChange={setIsUpdateOpen}
+        image={editingImage}
+        colorName={selectedColorOption?.color_name}
+        onSuccess={async () => {
+          // Luôn reload danh sách ảnh chung
+          await fetchGeneralImages();
+
+          // Nếu ảnh thuộc variant thì reload luôn danh sách ảnh theo màu
+          if (editingImage?.variant_id) {
+            await fetchImagesByVariantId(editingImage.variant_id);
+          }
+
+          // Có thể đóng modal sau khi cập nhật thành công
+          setIsUpdateOpen(false);
         }}
       />
     </div>
