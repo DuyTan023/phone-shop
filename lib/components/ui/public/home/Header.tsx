@@ -5,6 +5,7 @@ import {
   SignInButton,
   SignOutButton,
   SignUpButton,
+  useAuth,
   UserButton,
   useUser,
 } from "@clerk/nextjs";
@@ -19,7 +20,15 @@ import {
 import Link from "next/link";
 
 export default function Header() {
+  console.log("HEADER RENDERED");
   const { user } = useUser();
+
+  const { isLoaded, isSignedIn } = useAuth();
+
+  console.log("CLERK STATUS:", {
+    isLoaded,
+    isSignedIn,
+  });
 
   return (
     <header className="sticky top-0 z-50 bg-blue-600 text-white shadow-md">

@@ -1,6 +1,7 @@
 generator client {
-  provider = "prisma-client"
-  output   = "../app/generated/prisma"
+  provider        = "prisma-client"
+  output          = "../app/generated/prisma"
+  previewFeatures = ["partialIndexes"]
 }
 
 datasource db {
@@ -130,16 +131,65 @@ model units {
 }
 
 model users {
-  id         Int         @id @default(autoincrement())
-  clerk_id   String      @unique @db.VarChar(255)
-  email      String      @unique @db.VarChar(255)
-  full_name  String?     @db.VarChar(255)
-  phone      String?     @db.VarChar(20)
-  avatar_url String?
-  role       user_role   @default(USER)
-  status     user_status @default(ACTIVE)
-  created_at DateTime    @default(now()) @db.Timestamp(6)
-  updated_at DateTime    @default(now()) @db.Timestamp(6)
+  id             Int             @id @default(autoincrement())
+  clerk_id       String          @unique @db.VarChar(255)
+  email          String          @unique @db.VarChar(255)
+  full_name      String?         @db.VarChar(255)
+  phone          String?         @unique @db.VarChar(20)
+  avatar_url     String?
+  role           user_role       @default(USER)
+  status         user_status     @default(ACTIVE)
+  created_at     DateTime        @default(now()) @db.Timestamp(6)
+  updated_at     DateTime        @default(now()) @db.Timestamp(6)
+  user_addresses user_addresses?
+}
+
+model communes {
+  id             Int              @id @default(autoincrement())
+  province_id    Int
+  code           String           @unique @db.VarChar(10)
+  name           String           @db.VarChar(100)
+  full_name      String?          @db.VarChar(150)
+  type           commune_type
+  created_at     DateTime         @default(now()) @db.Timestamp(6)
+  updated_at     DateTime         @default(now()) @db.Timestamp(6)
+  provinces      provinces        @relation(fields: [province_id], references: [id], map: "fk_communes_province")
+  user_addresses user_addresses[]
+
+  @@unique([id, province_id], map: "uq_communes_id_province")
+  @@index([province_id], map: "idx_communes_province_id")
+}
+
+model provinces {
+  id             Int              @id @default(autoincrement())
+  code           String           @unique @db.VarChar(10)
+  name           String           @db.VarChar(100)
+  full_name      String?          @db.VarChar(150)
+  created_at     DateTime         @default(now()) @db.Timestamp(6)
+  updated_at     DateTime         @default(now()) @db.Timestamp(6)
+  communes       communes[]
+  user_addresses user_addresses[]
+}
+
+model user_addresses {
+  id             Int       @id @default(autoincrement())
+  user_id        Int       @unique(map: "uq_user_default_address", where: raw("(is_default = true)"))
+  recipient_name String    @db.VarChar(255)
+  phone          String    @db.VarChar(20)
+  province_id    Int
+  commune_id     Int
+  address_line   String    @db.VarChar(255)
+  note           String?   @db.VarChar(500)
+  is_default     Boolean   @default(false)
+  created_at     DateTime  @default(now()) @db.Timestamp(6)
+  updated_at     DateTime  @default(now()) @db.Timestamp(6)
+  communes       communes  @relation(fields: [commune_id, province_id], references: [id, province_id], map: "fk_user_addresses_commune")
+  provinces      provinces @relation(fields: [province_id], references: [id], map: "fk_user_addresses_province")
+  users          users     @relation(fields: [user_id], references: [id], onDelete: Cascade, map: "fk_user_addresses_user")
+
+  @@index([commune_id], map: "idx_user_addresses_commune_id")
+  @@index([province_id], map: "idx_user_addresses_province_id")
+  @@index([user_id], map: "idx_user_addresses_user_id")
 }
 
 enum user_role {
@@ -150,4 +200,10 @@ enum user_role {
 enum user_status {
   ACTIVE
   BLOCKED
+}
+
+enum commune_type {
+  COMMUNE
+  WARD
+  SPECIAL_ZONE
 }

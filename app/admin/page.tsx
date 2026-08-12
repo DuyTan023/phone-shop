@@ -92,7 +92,7 @@ const navMain: NavSection[] = [
       {
         title: "Khách hàng",
         icon: Users,
-        href: "/admin/customers",
+        href: "/admin/users",
         badge: null,
       },
     ],

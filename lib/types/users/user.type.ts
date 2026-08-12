@@ -11,5 +11,5 @@ export type CreateUserInput = {
 };
 
 export type UpdateUserInput = Partial<
-  Omit<CreateUserInput, "clerk_id" | "email" | "role" | "status">
+  Omit<CreateUserInput, "clerk_id" | "email">
 >;

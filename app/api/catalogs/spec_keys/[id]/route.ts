@@ -3,7 +3,7 @@ import { specKeyService } from "@/lib/services/catalogs/spec_key.service";
 import type { ApiResponse } from "@/lib/types/public/types";
 import { NextResponse, type NextRequest } from "next/server";
 
-type routeContext = { params: Promise<{ id: number }> };
+type routeContext = { params: Promise<{ id: string }> };
 
 export async function GET(req: NextRequest, { params }: routeContext) {
   const { id } = await params;
