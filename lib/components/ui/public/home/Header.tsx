@@ -11,6 +11,7 @@ import {
 } from "@clerk/nextjs";
 import {
   LogOut,
+  MapPin,
   PhoneCall,
   Search,
   ShoppingCart,
@@ -127,7 +128,15 @@ export default function Header() {
                       "w-8 h-8 rounded-full border-2 border-white/40 hover:border-white transition shadow-sm",
                   },
                 }}
-              />
+              >
+                <UserButton.MenuItems>
+                  <UserButton.Link
+                    label="Địa chỉ giao hàng"
+                    href="/account/addresses"
+                    labelIcon={<MapPin className="w-4 h-4" />}
+                  />
+                </UserButton.MenuItems>
+              </UserButton>
 
               {/* Nút Đăng xuất trực tiếp */}
               <SignOutButton>
