@@ -1,108 +1,296 @@
 "use client";
 
-import { Check, ChevronRight, Filter, Star, Zap } from "lucide-react";
+import type { brands, rams, storages } from "@/app/generated/prisma/client";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import type { ProductVariant } from "@/lib/repositories/product/products_variant.repository";
+import type { ApiResponse, PaginationResult } from "@/lib/types/public/types";
+import { ChevronRight, Filter, Star, Zap } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
-
-// Fake Data Danh Mục Brand
-const BRANDS = [
-  { name: "Apple (iPhone)", logo: "🍎" },
-  { name: "Samsung", logo: "📱" },
-  { name: "Xiaomi", logo: "🟠" },
-  { name: "OPPO", logo: "🟢" },
-  { name: "Vivo", logo: "🔵" },
-  { name: "Realme", logo: "🟡" },
-  { name: "ASUS ROG", logo: "🎮" },
-];
-
-// Fake Data Bộ Lọc
-const FILTER_OPTIONS = {
-  priceRanges: [
-    { label: "Tất cả giá", value: "all" },
-    { label: "Dưới 5 triệu", value: "under-5" },
-    { label: "5 - 10 triệu", value: "5-10" },
-    { label: "10 - 15 triệu", value: "10-15" },
-    { label: "Trên 15 triệu", value: "over-15" },
-  ],
-  os: [
-    { label: "Tất cả OS", value: "all" },
-    { label: "iOS (iPhone)", value: "ios" },
-    { label: "Android", value: "android" },
-  ],
-  ram: ["4GB", "6GB", "8GB", "12GB"],
-  storage: ["64GB", "128GB", "256GB", "512GB", "1TB"],
-};
-
-// Fake Data Sản Phẩm Nổi Bật
-const PRODUCTS = [
-  {
-    id: 1,
-    name: "iPhone 15 Pro Max 256GB",
-    price: 29590000,
-    oldPrice: 34990000,
-    rating: 4.9,
-    reviews: 128,
-    badge: "Giảm 15%",
-    specs: { ram: "8GB", storage: "256GB", os: "ios" },
-    image:
-      "https://images.unsplash.com/photo-1695048133142-1a20484d2569?w=500&q=80",
-  },
-  {
-    id: 2,
-    name: "Samsung Galaxy S24 Ultra 5G",
-    price: 27990000,
-    oldPrice: 33990000,
-    rating: 4.8,
-    reviews: 95,
-    badge: "Tặng Voucher 1Tr",
-    specs: { ram: "12GB", storage: "256GB", os: "android" },
-    image:
-      "https://images.unsplash.com/photo-1610945265064-0e34e5519bbf?w=500&q=80",
-  },
-  {
-    id: 3,
-    name: "Xiaomi 14 Ultra 512GB",
-    price: 24990000,
-    oldPrice: 29990000,
-    rating: 4.7,
-    reviews: 42,
-    badge: "Hot Sale",
-    specs: { ram: "16GB", storage: "512GB", os: "android" },
-    image:
-      "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=500&q=80",
-  },
-  {
-    id: 4,
-    name: "OPPO Find N3 Flip",
-    price: 19990000,
-    oldPrice: 22990000,
-    rating: 4.6,
-    reviews: 31,
-    badge: "Trả góp 0%",
-    specs: { ram: "12GB", storage: "256GB", os: "android" },
-    image:
-      "https://images.unsplash.com/photo-1580910051074-3eb694886505?w=500&q=80",
-  },
-];
+import { useEffect, useMemo, useState } from "react";
+import type { SerieWithBrand } from "../../series/SeriesSelection";
 
 export default function HomePage() {
-  const [selectedBrand, setSelectedBrand] = useState("Tất cả");
-  const [selectedOS, setSelectedOS] = useState("all");
-  const [selectedPrice, setSelectedPrice] = useState("all");
-  const [selectedRam, setSelectedRam] = useState<string[]>([]);
-  const [selectedStorage, setSelectedStorage] = useState<string[]>([]);
+  const [selectedBrand, setSelectedBrand] = useState<brands | null>(null);
+  const [brandsList, setBrandsList] = useState<brands[]>([]);
+  const [seriesList, setSeriesList] = useState<SerieWithBrand[]>([]);
+  const [selectedSeries, setSelectedSeries] = useState<SerieWithBrand | null>(
+    null,
+  );
+  const [productVariantList, setProductVariantList] = useState<
+    ProductVariant[]
+  >([]);
 
-  const toggleRam = (item: string) => {
-    setSelectedRam((prev) =>
-      prev.includes(item) ? prev.filter((i) => i !== item) : [...prev, item],
-    );
+  const [ramList, setRamList] = useState<rams[]>([]);
+  const [storageList, setStorageList] = useState<storages[]>([]);
+
+  const [selectedRam, setSelectedRam] = useState<number | null>(null);
+
+  const [selectedStorage, setSelectedStorage] = useState<number | null>(null);
+
+  const [selectedPrice, setSelectedPrice] = useState<{
+    min: number;
+    max?: number;
+  } | null>(null);
+
+  const fetchProductVariant = async () => {
+    try {
+      const response = await fetch(
+        "/api/product_manager/product_variants/default",
+      );
+
+      const result: ApiResponse<ProductVariant[]> = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.message);
+      }
+
+      const data = result.data ?? [];
+
+      setProductVariantList(data);
+    } catch (error) {
+      console.error("Lỗi lấy danh sách biến thể mặc định:", error);
+    }
   };
 
-  const toggleStorage = (item: string) => {
-    setSelectedStorage((prev) =>
-      prev.includes(item) ? prev.filter((i) => i !== item) : [...prev, item],
-    );
+  const fetchBrands = async () => {
+    try {
+      const response = await fetch("/api/catalogs/brands");
+
+      const result: ApiResponse<PaginationResult<brands>> =
+        await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.message);
+      }
+
+      setBrandsList(result.data?.data ?? []);
+    } catch (error) {
+      console.error("Lỗi lấy danh sách brand:", error);
+    }
   };
+
+  const fetchSeries = async (brand: brands) => {
+    try {
+      const response = await fetch(`/api/catalogs/brands/${brand.slug}/series`);
+
+      const result: ApiResponse<SerieWithBrand[]> = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.message);
+      }
+
+      setSeriesList(result.data ?? []);
+    } catch (error) {
+      console.error("Lỗi lấy danh sách series:", error);
+      setSeriesList([]);
+    }
+  };
+
+  const fetchProductVariantBySerie = async (serie: SerieWithBrand) => {
+    try {
+      const product_variant = await fetch(
+        `/api/catalogs/brands/${serie.slug}/series/${serie.id}`,
+      );
+
+      const result: ApiResponse<ProductVariant[]> =
+        await product_variant.json();
+
+      if (!product_variant.ok || !result.success) {
+        throw new Error(result.message);
+      }
+
+      const data = result.data ?? [];
+
+      setProductVariantList(data);
+    } catch (error) {
+      console.error("Lỗi lấy danh sách sản phẩm:", error);
+      setProductVariantList([]);
+    }
+  };
+
+  const fetchProductVariantByBrandSlug = async (brand: brands) => {
+    try {
+      const response = await fetch(
+        `/api/catalogs/brands/${brand.slug}/products`,
+      );
+
+      const result: ApiResponse<ProductVariant[]> = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.message);
+      }
+
+      const data = result.data ?? [];
+
+      setProductVariantList(data);
+    } catch (error) {
+      console.error("Lỗi lấy danh sách sản phẩm:", error);
+      setProductVariantList([]);
+    }
+  };
+
+  const fetchRams = async () => {
+    try {
+      const response = await fetch(`/api/catalogs/rams`);
+
+      const result: ApiResponse<rams[]> = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.message);
+      }
+
+      setRamList(result.data ?? []);
+    } catch (error) {
+      console.error("Lỗi lấy danh sách ram:", error);
+      setRamList([]);
+    }
+  };
+
+  const fetchStorage = async () => {
+    try {
+      const response = await fetch(`/api/catalogs/storages`);
+
+      const result: ApiResponse<storages[]> = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.message);
+      }
+
+      setStorageList(result.data ?? []);
+    } catch (error) {
+      console.error("Lỗi lấy danh sách rom:", error);
+      setStorageList([]);
+    }
+  };
+
+  // Xử lý khi click chọn Brand
+  const handleSelectBrand = (brand: brands | null) => {
+    setSelectedBrand(brand);
+    setSelectedSeries(null); // Reset series khi đổi brand khác
+
+    setSelectedRam(null);
+    setSelectedStorage(null);
+    setSelectedPrice(null);
+
+    if (brand) {
+      fetchSeries(brand);
+      fetchProductVariantByBrandSlug(brand);
+    } else {
+      setSeriesList([]);
+      fetchProductVariant(); // Hoặc tải lại danh sách mặc định ban đầu nếu chọn "Tất cả"
+    }
+  };
+
+  // Xử lý khi click chọn series
+  const handleSelectSerie = (serie: SerieWithBrand | null) => {
+    setSelectedSeries(serie);
+
+    setSelectedRam(null);
+    setSelectedStorage(null);
+    setSelectedPrice(null);
+
+    if (serie) {
+      fetchProductVariantBySerie(serie);
+    } else if (selectedBrand) {
+      fetchProductVariantByBrandSlug(selectedBrand);
+    } else {
+      fetchProductVariant();
+    }
+  };
+  // Khi chọn ram
+  const handleSelectRam = (ramId: number) => {
+    setSelectedRam((prev) => (prev === ramId ? null : ramId));
+  };
+
+  //Khi chọn rom
+  const handleSelectStorage = (storageId: number) => {
+    setSelectedStorage((prev) => (prev === storageId ? null : storageId));
+  };
+
+  //Khi chọn giá
+  const handleSelectPrice = (min: number, max?: number) => {
+    setSelectedPrice((prev) => {
+      if (prev?.min === min && prev?.max === max) {
+        return null;
+      }
+
+      return { min, max };
+    });
+  };
+
+  const handleResetFilter = () => {
+    setSelectedRam(null);
+    setSelectedStorage(null);
+    setSelectedPrice(null);
+  };
+
+  const filteredProductVariantList = useMemo(() => {
+    let result = [...productVariantList];
+
+    if (selectedRam !== null) {
+      result = result.filter((variant) => variant.ram_id === selectedRam);
+    }
+
+    if (selectedStorage !== null) {
+      result = result.filter(
+        (variant) => variant.storage_id === selectedStorage,
+      );
+    }
+
+    if (selectedPrice !== null) {
+      result = result.filter((variant) => {
+        const price = Number(variant.price);
+
+        if (selectedPrice.max === undefined) {
+          return price >= selectedPrice.min;
+        }
+
+        return price >= selectedPrice.min && price <= selectedPrice.max;
+      });
+    }
+
+    return result;
+  }, [productVariantList, selectedRam, selectedStorage, selectedPrice]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadProductVariant() {
+      if (isMounted) {
+        await fetchProductVariant();
+      }
+    }
+
+    async function loadBrands() {
+      if (isMounted) {
+        await fetchBrands();
+      }
+    }
+    async function loadRams() {
+      if (isMounted) {
+        await fetchRams();
+      }
+    }
+
+    async function loadStorages() {
+      if (isMounted) {
+        await fetchStorage();
+      }
+    }
+    loadProductVariant();
+    loadBrands();
+    loadRams();
+    loadStorages();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   return (
     <div className="container mx-auto px-4 py-6 space-y-8">
@@ -167,147 +355,251 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 2. MENU DANH SÁCH BRANDS */}
-      <section className="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
-        <h2 className="text-base font-bold text-slate-800 mb-3 flex items-center gap-2">
-          Thương hiệu nổi bật
-        </h2>
-        <div className="flex items-center gap-3 overflow-x-auto pb-2 scrollbar-none">
-          <button
-            onClick={() => setSelectedBrand("Tất cả")}
-            className={`px-4 py-2 rounded-lg text-xs font-medium border whitespace-nowrap transition ${
-              selectedBrand === "Tất cả"
-                ? "bg-blue-600 text-white border-blue-600"
-                : "bg-slate-50 text-slate-700 border-slate-200 hover:border-blue-400"
-            }`}
-          >
-            Tất cả
-          </button>
-          {BRANDS.map((brand, idx) => (
+      {/* 2. MENU DANH SÁCH BRANDS & SERIES SELECTION */}
+      <section className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 space-y-4">
+        <div>
+          <h2 className="text-base font-bold text-slate-800 mb-3 flex items-center gap-2">
+            Thương hiệu nổi bật
+          </h2>
+          <div className="flex items-center gap-3 overflow-x-auto pb-2 scrollbar-none">
             <button
-              key={idx}
-              onClick={() => setSelectedBrand(brand.name)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium border whitespace-nowrap transition ${
-                selectedBrand === brand.name
+              onClick={() => handleSelectBrand(null)}
+              className={`px-4 py-2 rounded-lg text-xs font-medium border whitespace-nowrap transition ${
+                selectedBrand === null
                   ? "bg-blue-600 text-white border-blue-600"
-                  : "bg-white text-slate-700 border-slate-200 hover:border-blue-400"
+                  : "bg-slate-50 text-slate-700 border-slate-200 hover:border-blue-400"
               }`}
             >
-              <span>{brand.logo}</span>
-              <span>{brand.name}</span>
+              Tất cả
             </button>
-          ))}
+            {brandsList.map((brand) => (
+              <button
+                key={brand.id}
+                onClick={() => handleSelectBrand(brand)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium border whitespace-nowrap transition ${
+                  selectedBrand?.id === brand.id
+                    ? "bg-blue-600 text-white border-blue-600"
+                    : "bg-white text-slate-700 border-slate-200 hover:border-blue-400"
+                }`}
+              >
+                {brand.logo && (
+                  <img
+                    src={brand.logo}
+                    alt={brand.name}
+                    className="w-4 h-4 object-contain"
+                  />
+                )}
+                <span>{brand.name}</span>
+              </button>
+            ))}
+          </div>
         </div>
-      </section>
 
-      {/* 3. BỘ LỌC ĐƠN GIẢN */}
-      <section className="bg-white p-5 rounded-xl shadow-sm border border-slate-100 space-y-4">
-        <div className="flex items-center gap-2 text-slate-800 font-bold text-sm border-b pb-3">
-          <Filter className="w-4 h-4 text-blue-600" />
-          <span>Bộ lọc tìm kiếm</span>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* Hệ điều hành */}
-          <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1.5">
-              Hệ điều hành
-            </label>
-            <div className="flex flex-wrap gap-1.5">
-              {FILTER_OPTIONS.os.map((item) => (
+        {/* Danh sách Series Selection hiển thị ngay bên dưới khi đã chọn Brand */}
+        {selectedBrand && seriesList.length > 0 && (
+          <div className="pt-3 border-t border-slate-100">
+            <h3 className="text-xs font-semibold text-slate-500 mb-2">
+              Dòng sản phẩm ({selectedBrand.name})
+            </h3>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => handleSelectSerie(null)}
+                className={`px-3 py-1.5 rounded-md text-xs font-medium border transition ${
+                  selectedSeries === null
+                    ? "bg-slate-800 text-white border-slate-800"
+                    : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
+                }`}
+              >
+                Tất cả dòng
+              </button>
+              {seriesList.map((serie) => (
                 <button
-                  key={item.value}
-                  onClick={() => setSelectedOS(item.value)}
-                  className={`text-xs px-3 py-1.5 rounded-md border transition ${
-                    selectedOS === item.value
-                      ? "bg-blue-50 border-blue-600 text-blue-600 font-semibold"
-                      : "border-slate-200 text-slate-600 hover:bg-slate-50"
+                  key={serie.id}
+                  onClick={() => handleSelectSerie(serie)}
+                  className={`px-3 py-1.5 rounded-md text-xs font-medium border transition ${
+                    selectedSeries?.id === serie.id
+                      ? "bg-slate-800 text-white border-slate-800"
+                      : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
                   }`}
                 >
-                  {item.label}
+                  {serie.name}
                 </button>
               ))}
             </div>
           </div>
-
-          {/* Mức giá */}
-          <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1.5">
-              Mức giá
-            </label>
-            <select
-              value={selectedPrice}
-              onChange={(e) => setSelectedPrice(e.target.value)}
-              className="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-md focus:outline-none focus:border-blue-600"
-            >
-              {FILTER_OPTIONS.priceRanges.map((price) => (
-                <option key={price.value} value={price.value}>
-                  {price.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Dung lượng RAM */}
-          <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1.5">
-              Dung lượng RAM
-            </label>
-            <div className="flex flex-wrap gap-1.5">
-              {FILTER_OPTIONS.ram.map((ram) => {
-                const active = selectedRam.includes(ram);
-                return (
-                  <button
-                    key={ram}
-                    onClick={() => toggleRam(ram)}
-                    className={`text-xs px-2.5 py-1 rounded border flex items-center gap-1 transition ${
-                      active
-                        ? "bg-blue-600 text-white border-blue-600"
-                        : "border-slate-200 text-slate-600 hover:bg-slate-50"
-                    }`}
-                  >
-                    {active && <Check className="w-3 h-3" />}
-                    {ram}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Bộ nhớ trong */}
-          <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1.5">
-              Bộ nhớ trong (ROM)
-            </label>
-            <div className="flex flex-wrap gap-1.5">
-              {FILTER_OPTIONS.storage.map((mem) => {
-                const active = selectedStorage.includes(mem);
-                return (
-                  <button
-                    key={mem}
-                    onClick={() => toggleStorage(mem)}
-                    className={`text-xs px-2.5 py-1 rounded border flex items-center gap-1 transition ${
-                      active
-                        ? "bg-blue-600 text-white border-blue-600"
-                        : "border-slate-200 text-slate-600 hover:bg-slate-50"
-                    }`}
-                  >
-                    {active && <Check className="w-3 h-3" />}
-                    {mem}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
+        )}
       </section>
 
-      {/* 4. DANH SÁCH SẢN PHẨM NỔI BẬT */}
+      {/* 3. BỘ LỌC ĐƠN GIẢN */}
+
+      <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <Accordion>
+          <AccordionItem value="filter" className="border-none">
+            {/* Header */}
+            <AccordionTrigger className="px-5 py-4 hover:no-underline hover:bg-slate-50/75 transition-colors">
+              <div className="flex items-center justify-between w-full pr-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-blue-50">
+                    <Filter className="w-4 h-4 text-blue-600" />
+                  </div>
+
+                  <div className="text-left">
+                    <h3 className="text-sm font-bold text-slate-800">
+                      Bộ lọc tìm kiếm
+                    </h3>
+                    <p className="text-[11px] text-slate-400 mt-0.5">
+                      Lọc sản phẩm theo mức giá, RAM và bộ nhớ
+                    </p>
+                  </div>
+                </div>
+
+                {/* Dùng span thay vì Button/button để tránh lỗi lồng thẻ button */}
+                <span
+                  role="button"
+                  tabIndex={0}
+                  onClick={(e) => {
+                    e.stopPropagation(); // Ngăn sự kiện mở/đóng accordion khi bấm đặt lại
+                    handleResetFilter();
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.stopPropagation();
+                      handleResetFilter();
+                    }
+                  }}
+                  className="text-xs font-semibold text-slate-500 hover:text-blue-600 transition-colors cursor-pointer"
+                >
+                  Đặt lại
+                </span>
+              </div>
+            </AccordionTrigger>
+
+            {/* Toàn bộ nội dung filter */}
+            <AccordionContent className="px-5 pb-5">
+              <div className="border-t border-slate-100 pt-5">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {/* 1. MỨC GIÁ */}
+                  <div>
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="w-1 h-4 rounded-full bg-blue-500" />
+                      <h4 className="text-xs font-bold text-slate-700">
+                        Mức giá
+                      </h4>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                      {[
+                        { label: "4 - 7 triệu", min: 4000000, max: 7000000 },
+                        { label: "7 - 13 triệu", min: 7000000, max: 13000000 },
+                        {
+                          label: "13 - 20 triệu",
+                          min: 13000000,
+                          max: 20000000,
+                        },
+                        { label: "Trên 20 triệu", min: 20000000 },
+                      ].map((item) => {
+                        const isSelected =
+                          selectedPrice?.min === item.min &&
+                          selectedPrice?.max === item.max;
+
+                        return (
+                          <button
+                            key={item.label}
+                            type="button"
+                            onClick={() =>
+                              handleSelectPrice(item.min, item.max)
+                            }
+                            className={`px-3.5 py-2 rounded-lg border text-xs font-medium transition-all ${
+                              isSelected
+                                ? "bg-blue-600 text-white border-blue-600 shadow-sm"
+                                : "border-slate-200 bg-slate-50 text-slate-600 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600"
+                            }`}
+                          >
+                            {item.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* 2. RAM */}
+                  <div>
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="w-1 h-4 rounded-full bg-blue-500" />
+                      <h4 className="text-xs font-bold text-slate-700">
+                        Dung lượng RAM
+                      </h4>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                      {ramList.map((ram) => {
+                        const isSelected = selectedRam === ram.id;
+
+                        return (
+                          <button
+                            key={ram.id}
+                            type="button"
+                            onClick={() => handleSelectRam(ram.id)}
+                            className={`min-w-[58px] px-3 py-2 rounded-lg border text-xs font-medium transition-all ${
+                              isSelected
+                                ? "bg-blue-600 text-white border-blue-600 shadow-sm"
+                                : "border-slate-200 bg-slate-50 text-slate-600 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600"
+                            }`}
+                          >
+                            {ram.value}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* 3. ROM (BỘ NHỚ TRONG) */}
+                  <div>
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="w-1 h-4 rounded-full bg-blue-500" />
+                      <h4 className="text-xs font-bold text-slate-700">
+                        Bộ nhớ trong (ROM)
+                      </h4>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                      {storageList.map((storage) => {
+                        const isSelected = selectedStorage === storage.id;
+
+                        return (
+                          <button
+                            key={storage.id}
+                            type="button"
+                            onClick={() => handleSelectStorage(storage.id)}
+                            className={`min-w-[62px] px-3 py-2 rounded-lg border text-xs font-medium transition-all ${
+                              isSelected
+                                ? "bg-blue-600 text-white border-blue-600 shadow-sm"
+                                : "border-slate-200 bg-slate-50 text-slate-600 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600"
+                            }`}
+                          >
+                            {storage.value}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+      </section>
+
+      {/* 4. DANH SÁCH SẢN PHẨM THEO SERIES (ĐÃ THAY THẾ) */}
       <section className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-extrabold text-slate-900 flex items-center gap-2">
             <Zap className="w-5 h-5 text-yellow-500 fill-yellow-500" />
-            Điện Thoại Nổi Bật
+            {selectedSeries && selectedBrand
+              ? `Sản phẩm thuộc ${selectedBrand.name} / ${selectedSeries.name}`
+              : selectedBrand
+                ? `Sản phẩm thuộc ${selectedBrand.name}`
+                : "Tất cả sản phẩm nổi bật"}
           </h2>
           <Link
             href="#"
@@ -317,68 +609,94 @@ export default function HomePage() {
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {PRODUCTS.map((product) => (
-            <div
-              key={product.id}
-              className="bg-white rounded-xl border border-slate-100 p-4 shadow-sm hover:shadow-md transition flex flex-col justify-between group"
-            >
-              <div>
-                {/* Ảnh sản phẩm + Badge */}
-                <div className="relative aspect-square w-full mb-3 bg-slate-50 rounded-lg overflow-hidden flex items-center justify-center">
-                  <span className="absolute top-2 left-2 bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded z-10">
-                    {product.badge}
-                  </span>
-                  <img
-                    src={product.image}
-                    alt={product.name}
-                    className="object-contain max-h-48 group-hover:scale-105 transition duration-300"
-                  />
-                </div>
+        {filteredProductVariantList.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {filteredProductVariantList.map((variant, index) => {
+              const formattedPrice = Number(variant.price).toLocaleString(
+                "vi-VN",
+              );
+              const formattedCostPrice = variant.cost_price
+                ? Number(variant.cost_price).toLocaleString("vi-VN")
+                : null;
 
-                {/* Thông số cấu hình nhanh */}
-                <div className="flex gap-1 mb-2">
-                  <span className="text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded font-medium">
-                    {product.specs.ram}
-                  </span>
-                  <span className="text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded font-medium">
-                    {product.specs.storage}
-                  </span>
-                </div>
+              return (
+                <div
+                  key={variant.id}
+                  className="bg-white rounded-xl border border-slate-100 p-4 shadow-sm hover:shadow-md transition flex flex-col justify-between group"
+                >
+                  <div>
+                    <div className="relative aspect-square w-full mb-3 bg-slate-50 rounded-lg overflow-hidden flex items-center justify-center">
+                      <span className="absolute top-2 left-2 bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded z-10">
+                        {variant.colors?.name || "Chính hãng"}
+                      </span>
+                      <div className="w-full h-full flex items-center justify-center bg-slate-100">
+                        <img
+                          src={
+                            variant.product_images[0]?.image_url ??
+                            "/placeholder.png"
+                          }
+                          alt={variant.products.name}
+                          className="w-full h-full object-contain"
+                        />
+                      </div>
+                    </div>
 
-                {/* Tên sản phẩm */}
-                <h3 className="font-semibold text-slate-800 text-sm line-clamp-2 group-hover:text-blue-600 transition mb-2">
-                  {product.name}
-                </h3>
-              </div>
+                    <div className="flex gap-1 mb-2">
+                      {variant.rams?.value && (
+                        <span className="text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded font-medium">
+                          RAM: {variant.rams.value}
+                        </span>
+                      )}
+                      {variant.storages?.value && (
+                        <span className="text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded font-medium">
+                          {variant.storages.value}
+                        </span>
+                      )}
+                    </div>
 
-              {/* Giá và Đánh giá */}
-              <div className="space-y-2 mt-2 pt-2 border-t border-slate-50">
-                <div className="flex items-baseline gap-2">
-                  <span className="text-base font-bold text-blue-600">
-                    {product.price.toLocaleString("vi-VN")}đ
-                  </span>
-                  <span className="text-xs text-slate-400 line-through">
-                    {product.oldPrice.toLocaleString("vi-VN")}đ
-                  </span>
-                </div>
-
-                <div className="flex items-center justify-between text-xs text-slate-500">
-                  <div className="flex items-center gap-1 text-yellow-500">
-                    <Star className="w-3.5 h-3.5 fill-yellow-400" />
-                    <span className="font-medium text-slate-700">
-                      {product.rating}
-                    </span>
-                    <span className="text-slate-400">({product.reviews})</span>
+                    <h3 className="font-semibold text-slate-800 text-sm line-clamp-2 group-hover:text-blue-600 transition mb-2">
+                      {variant.products?.name} - {variant.colors?.name} (
+                      {variant.storages?.value})
+                    </h3>
                   </div>
-                  <button className="bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white px-2.5 py-1 rounded text-xs font-semibold transition">
-                    Mua ngay
-                  </button>
+
+                  <div className="space-y-2 mt-2 pt-2 border-t border-slate-50">
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-base font-bold text-blue-600">
+                        {formattedPrice}đ
+                      </span>
+                      {formattedCostPrice && (
+                        <span className="text-xs text-slate-400 line-through">
+                          {formattedCostPrice}đ
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex items-center justify-between text-xs text-slate-500">
+                      <div className="flex items-center gap-1 text-yellow-500">
+                        <Star className="w-3.5 h-3.5 fill-yellow-400" />
+                        <span className="font-medium text-slate-700">4.9</span>
+                        <span className="text-slate-400">
+                          ({variant.stock})
+                        </span>
+                      </div>
+                      <button className="bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white px-2.5 py-1 rounded text-xs font-semibold transition">
+                        Mua ngay
+                      </button>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
-          ))}
-        </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="bg-white rounded-xl border border-slate-100 p-12 text-center text-slate-400">
+            <p className="text-sm">
+              Vui lòng chọn một dòng sản phẩm (Series) để hiển thị danh sách
+              biến thể.
+            </p>
+          </div>
+        )}
       </section>
     </div>
   );

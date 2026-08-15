@@ -132,7 +132,7 @@ export default function Header() {
                 <UserButton.MenuItems>
                   <UserButton.Link
                     label="Địa chỉ giao hàng"
-                    href="/account/addresses"
+                    href="/addresses"
                     labelIcon={<MapPin className="w-4 h-4" />}
                   />
                 </UserButton.MenuItems>

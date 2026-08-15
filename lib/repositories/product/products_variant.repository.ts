@@ -31,6 +31,12 @@ export type ProductVariant = Prisma.product_variantsGetPayload<{
     colors: true;
     storages: true;
     rams: true;
+    product_images: {
+      where: {
+        is_featured: true;
+      };
+      take: 1;
+    };
   };
 }>;
 
@@ -47,6 +53,12 @@ const productVariantInclude = {
   colors: true,
   storages: true,
   rams: true,
+  product_images: {
+    where: {
+      is_featured: true,
+    },
+    take: 1,
+  },
 } satisfies Prisma.product_variantsInclude;
 
 //Định nghĩa kiểu Filter
@@ -56,6 +68,8 @@ export type ProductVariantFilter = {
   color_id?: number;
   ram_id?: number;
   storage_id?: number;
+  priceMin?: number;
+  priceMax?: number;
 };
 
 const buildProductVariantWhere = (keyword?: string) => {
@@ -98,6 +112,17 @@ const buildVariantWhere = (
 
   if (filters.storage_id) {
     where.storage_id = filters.storage_id;
+  }
+
+  if (filters.priceMin !== undefined || filters.priceMax !== undefined) {
+    where.price = {
+      ...(filters.priceMin !== undefined && {
+        gte: filters.priceMin,
+      }),
+      ...(filters.priceMax !== undefined && {
+        lte: filters.priceMax,
+      }),
+    };
   }
 
   return where;
@@ -159,6 +184,54 @@ export const productVariantRepository = {
       }),
     ]);
     return { product_variants, total };
+  },
+
+  findDefaultBySeriesId: async (
+    seriesId: number,
+  ): Promise<ProductVariant[]> => {
+    return prisma.product_variants.findMany({
+      where: {
+        is_default: true,
+        products: {
+          serie_id: seriesId,
+        },
+      },
+      include: productVariantInclude,
+      orderBy: {
+        product_id: "asc",
+      },
+    });
+  },
+
+  findDefaultByBrandSlug: async (slug: string): Promise<ProductVariant[]> => {
+    return prisma.product_variants.findMany({
+      where: {
+        is_default: true,
+        products: {
+          series: {
+            brands: {
+              slug: slug,
+            },
+          },
+        },
+      },
+      include: productVariantInclude,
+      orderBy: {
+        product_id: "asc",
+      },
+    });
+  },
+
+  findAllDefault: async (): Promise<ProductVariant[]> => {
+    return prisma.product_variants.findMany({
+      where: {
+        is_default: true,
+      },
+      include: productVariantInclude,
+      orderBy: {
+        product_id: "asc",
+      },
+    });
   },
 
   create: async (

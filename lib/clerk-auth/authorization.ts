@@ -1,6 +1,5 @@
-import { auth } from "@clerk/nextjs/server";
-
 import { userService } from "@/lib/services/users/users.service";
+import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 
 export async function requireAuth() {
@@ -20,17 +19,20 @@ export async function requireAuth() {
 }
 
 export async function requireAdmin() {
+  let user;
+
   try {
-    const user = await requireAuth();
-
-    if (user.role !== "ADMIN") {
-      redirect("/access-denied");
-      return null; // Trả về null thay vì throw error
-    }
-
-    return user;
+    // Chỉ bọc phần lấy thông tin và check lỗi xác thực/block vào try/catch
+    user = await requireAuth();
   } catch (error) {
-    // Bắt lỗi từ requireAuth (UNAUTHORIZED hoặc USER_BLOCKED)
-    throw error; // Ném lại để xử lý ở layout
+    // Ném lại lỗi UNAUTHORIZED hoặc USER_BLOCKED để layout/page bên ngoài xử lý
+    throw error;
   }
+
+  // Kiểm tra quyền ADMIN nằm NGOÀI try/catch để hàm redirect() hoạt động đúng
+  if (user.role !== "ADMIN") {
+    redirect("/access-denied");
+  }
+
+  return user;
 }

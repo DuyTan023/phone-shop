@@ -15,6 +15,7 @@ type GetProductSpecParams = {
   page?: number;
   limit?: number;
   keyword?: string;
+  product_id?: number;
 };
 
 export interface GroupedProductSpec {
@@ -22,72 +23,90 @@ export interface GroupedProductSpec {
   groupName: string;
   specs: Product_Spec[];
 }
+
 export const productSpecService = {
+  // Lấy danh sách thông số sản phẩm
   GetProductSpec: async ({
     page = 1,
     limit = 10,
     keyword,
+    product_id,
   }: GetProductSpecParams): Promise<PaginationResult<Product_Spec>> => {
     try {
       const { product_specs, total } = await productSpecRepository.findMany({
         page,
         limit,
         keyword,
+        product_id,
       });
+
       return {
         data: product_specs,
-        total: total,
-        page: page,
+        total,
+        page,
         limit,
         totalPage: Math.ceil(total / limit),
       };
     } catch (err) {
-      throw new Error("Không thể lấy danh sách sản phẩm: " + err);
+      throw new Error("Không thể lấy danh sách thông số sản phẩm: " + err);
     }
   },
 
+  // Lấy 1 thông số theo ID
   getProductSpecById: async (id: number): Promise<Product_Spec> => {
     try {
       const product_spec = await productSpecRepository.findById(id);
-      if (!product_spec) throw new Error("NOT_FOUND");
+
+      if (!product_spec) {
+        throw new Error("NOT_FOUND");
+      }
+
       return product_spec;
     } catch (err) {
-      if (err instanceof Error && err.message === "NOT_FOUND") throw err;
+      if (err instanceof Error && err.message === "NOT_FOUND") {
+        throw err;
+      }
+
       throw new Error("SERVER_ERROR");
     }
   },
 
-  getProductSpec: async (product_id: number): Promise<Product_Spec> => {
+  // Lấy tất cả thông số của 1 sản phẩm
+  getProductSpec: async (product_id: number): Promise<Product_Spec[]> => {
     try {
-      const product_spec =
+      const product_specs =
         await productSpecRepository.findByProductId(product_id);
-      if (!product_spec) throw new Error("NOT_FOUND");
-      return product_spec;
+
+      return product_specs;
     } catch (err) {
-      if (err instanceof Error && err.message === "NOT_FOUND") throw err;
       throw new Error("SERVER_ERROR");
     }
   },
 
+  // Lấy thông số của sản phẩm và gom theo nhóm
   getProductSpecsGrouped: async (
     product_Id: number,
   ): Promise<GroupedProductSpec[]> => {
     const productExists = await prisma.products.findUnique({
-      where: { id: product_Id },
-      select: { id: true },
+      where: {
+        id: product_Id,
+      },
+      select: {
+        id: true,
+      },
     });
 
     if (!productExists) {
       throw new Error(`Sản phẩm với ID ${product_Id} không tồn tại.`);
     }
 
-    // 2. Lấy dữ liệu gom nhóm từ Repository
     const groupedSpecs =
       await productSpecRepository.getProductSpecsGroupedByGroup(product_Id);
 
     return groupedSpecs;
   },
 
+  // Tạo thông số cho sản phẩm
   createProductSpec: async (
     input: CreateProductSpecInput,
   ): Promise<product_specs> => {
@@ -96,36 +115,58 @@ export const productSpecService = {
         input.product_id,
         input.spec_key_id,
       );
-      if (existing) throw new Error("PRODUCT_SPEC_EXISTS");
+
+      if (existing) {
+        throw new Error("PRODUCT_SPEC_EXISTS");
+      }
+
       return await productSpecRepository.createProductSpec(input);
     } catch (err) {
-      if (err instanceof Error && err.message === "PRODUCT_SPEC_EXISTS")
+      if (err instanceof Error && err.message === "PRODUCT_SPEC_EXISTS") {
         throw err;
-      if (err instanceof PrismaClientKnownRequestError && err.code === "P2003")
-        throw new Error("RELATED_ENTITY_NOT_FOUND");
-      throw new Error("SERVER_ERROR");
-    }
-  },
-  updateProductSpec: async (
-    id: number,
-    input: UpdateProductSpecInput,
-  ): Promise<product_specs> => {
-    try {
-      const currentProductSpec = await productSpecRepository.findById(id);
-      if (!currentProductSpec) throw new Error("NOT_FOUND");
-      return await productSpecRepository.updateProductSpec(id, input);
-    } catch (err) {
-      if (err instanceof Error && err.message === "NOT_FOUND") throw err;
+      }
+
       if (
         err instanceof PrismaClientKnownRequestError &&
         err.code === "P2003"
       ) {
         throw new Error("RELATED_ENTITY_NOT_FOUND");
       }
+
       throw new Error("SERVER_ERROR");
     }
   },
 
+  // Cập nhật thông số
+  updateProductSpec: async (
+    id: number,
+    input: UpdateProductSpecInput,
+  ): Promise<product_specs> => {
+    try {
+      const currentProductSpec = await productSpecRepository.findById(id);
+
+      if (!currentProductSpec) {
+        throw new Error("NOT_FOUND");
+      }
+
+      return await productSpecRepository.updateProductSpec(id, input);
+    } catch (err) {
+      if (err instanceof Error && err.message === "NOT_FOUND") {
+        throw err;
+      }
+
+      if (
+        err instanceof PrismaClientKnownRequestError &&
+        err.code === "P2003"
+      ) {
+        throw new Error("RELATED_ENTITY_NOT_FOUND");
+      }
+
+      throw new Error("SERVER_ERROR");
+    }
+  },
+
+  // Xóa thông số
   deleteProductSpec: async (id: number): Promise<product_specs> => {
     try {
       return await productSpecRepository.deleteById(id);
@@ -134,10 +175,12 @@ export const productSpecService = {
         if (err.code === "P2025") {
           throw new Error("NOT_FOUND");
         }
+
         if (err.code === "P2003") {
           throw new Error("IN_USE");
         }
       }
+
       throw new Error("SERVER_ERROR");
     }
   },

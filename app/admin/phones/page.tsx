@@ -281,9 +281,13 @@ export default function ProductListPage() {
                           {/* 1. Ảnh */}
                           <TableCell className="pl-4 py-2">
                             <div className="w-9 h-9 rounded-lg bg-slate-50 border border-slate-200/80 p-0.5 flex items-center justify-center shrink-0">
-                              {product.thumbnail || brand?.logo ? (
+                              {product.product_images[0]?.image_url ||
+                              brand?.logo ? (
                                 <CldImage
-                                  src={product.thumbnail || brand?.logo}
+                                  src={
+                                    product.product_images[0]?.image_url ||
+                                    brand?.logo
+                                  }
                                   alt={product.name}
                                   width={32}
                                   height={32}

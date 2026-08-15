@@ -7,19 +7,28 @@ import type {
 
 import { FindManyParams } from "@/lib/types/public/types";
 
+const productInclude = {
+  series: {
+    include: {
+      brands: true,
+    },
+  },
+  product_images: {
+    where: {
+      is_featured: true,
+    },
+    take: 1,
+  },
+} satisfies Prisma.productsInclude;
+
+export type ProductWithSerie = Prisma.productsGetPayload<{
+  include: typeof productInclude;
+}>;
+
 export type FindManyResultProduct = {
   products: ProductWithSerie[];
   total: number;
 };
-export type ProductWithSerie = Prisma.productsGetPayload<{
-  include: {
-    series: {
-      include: {
-        brands: true; // Lấy luôn thông tin hãng thông qua series
-      };
-    };
-  };
-}>;
 
 export const productRepository = {
   findMany: async ({
@@ -28,83 +37,61 @@ export const productRepository = {
     keyword,
   }: FindManyParams): Promise<FindManyResultProduct> => {
     const skip = (page - 1) * limit;
+
+    const where = keyword
+      ? {
+          name: {
+            contains: keyword,
+            mode: "insensitive" as const,
+          },
+        }
+      : undefined;
+
     const [products, total] = await prisma.$transaction([
       prisma.products.findMany({
-        where: keyword
-          ? {
-              name: {
-                contains: keyword,
-                mode: "insensitive",
-              },
-            }
-          : undefined,
+        where,
         skip,
         take: limit,
         orderBy: { id: "asc" },
         include: {
-          series: {
-            include: {
-              brands: true, // Lấy luôn thông tin hãng thông qua series
-            },
-          },
+          ...productInclude,
           _count: {
             select: {
-              product_variants: true, // Số lượng biến thể
-              product_specs: true, // Số lượng thông số
+              product_variants: true,
+              product_specs: true,
             },
           },
         },
       }),
+
       prisma.products.count({
-        where: keyword
-          ? {
-              name: {
-                contains: keyword,
-                mode: "insensitive",
-              },
-            }
-          : undefined,
+        where,
       }),
     ]);
+
     return { products, total };
   },
 
   findById: async (id: number): Promise<ProductWithSerie | null> => {
     return prisma.products.findUnique({
       where: { id },
-      include: {
-        series: {
-          include: {
-            brands: true, // Lấy luôn thông tin hãng thông qua series
-          },
-        },
-        _count: {
-          select: {
-            product_variants: true, // Số lượng biến thể
-            product_specs: true, // Số lượng thông số
-          },
-        },
-      },
+      include: productInclude,
     });
   },
 
   findBySlug: async (slug: string): Promise<ProductWithSerie | null> => {
     return prisma.products.findUnique({
       where: { slug },
-      include: {
-        series: {
-          include: {
-            brands: true, // Lấy luôn thông tin hãng thông qua series
-          },
-        },
-      },
+      include: productInclude,
     });
   },
 
   createProduct: async (
     createProductInput: CreateProductInput,
   ): Promise<products> => {
-    return prisma.products.create({ data: createProductInput });
+    return prisma.products.create({
+      data: createProductInput,
+    });
   },
 
   updateProductById: async (
@@ -119,31 +106,25 @@ export const productRepository = {
 
   deleteProductById: async (id: number): Promise<products> => {
     return prisma.products.delete({
-      where: { id: id },
+      where: { id },
     });
   },
 
-  // kiểm tra trong quá trình thêm mới 1 serie ko được có product name trùng nhau
+  // Kiểm tra product trùng name trong cùng series
   findByNameSerieId: async (
     name: string,
     serie_id: number,
   ): Promise<ProductWithSerie | null> => {
     return prisma.products.findFirst({
       where: {
-        name: name,
-        serie_id: serie_id,
+        name,
+        serie_id,
       },
-      include: {
-        series: {
-          include: {
-            brands: true, // Lấy luôn thông tin hãng thông qua series
-          },
-        },
-      },
+      include: productInclude,
     });
   },
 
-  // Kiểm tra tên và serie_id bỏ qua id hiện tại
+  // Kiểm tra product trùng name trong cùng series, bỏ qua ID hiện tại
   findByNameSerieIdExceptId: async (
     id: number,
     name: string,
@@ -157,17 +138,11 @@ export const productRepository = {
           id,
         },
       },
-      include: {
-        series: {
-          include: {
-            brands: true, // Lấy luôn thông tin hãng thông qua series
-          },
-        },
-      },
+      include: productInclude,
     });
   },
 
-  // Kiểm slug tên bỏ qua ID hiện tại
+  // Kiểm tra slug, bỏ qua ID hiện tại
   findBySlugExceptId: async (
     id: number,
     slug: string,
@@ -179,13 +154,7 @@ export const productRepository = {
           id,
         },
       },
-      include: {
-        series: {
-          include: {
-            brands: true, // Lấy luôn thông tin hãng thông qua series
-          },
-        },
-      },
+      include: productInclude,
     });
   },
 };

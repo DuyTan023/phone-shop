@@ -48,6 +48,16 @@ export const serieService = {
       throw new Error("SERVER_ERROR");
     }
   },
+  getSerieByBrandSlug: async (slug: string): Promise<SerieWithBrand[]> => {
+    try {
+      const serie = await seriesRepository.findByBrandSlug(slug);
+      if (!serie) throw new Error("NOT_FOUND");
+      return serie;
+    } catch (err) {
+      if (err instanceof Error && err.message === "NOT_FOUND") throw err;
+      throw new Error("SERVER_ERROR");
+    }
+  },
   getSerieBySlug: async (slug: string): Promise<SerieWithBrand> => {
     try {
       const serie = await seriesRepository.findBySlug(slug);

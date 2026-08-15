@@ -1,8 +1,6 @@
-import Header from "@/lib/components/ui/public/home/Header";
 import type { Metadata } from "next";
 import { Inter as FontInter } from "next/font/google";
 
-import Footer from "@/lib/components/ui/public/home/Footer";
 import { viVN } from "@clerk/localizations";
 import { ClerkProvider } from "@clerk/nextjs";
 import "./globals.css";
@@ -25,11 +23,11 @@ export default function RootLayout({
         <body
           className={`${inter.className} bg-slate-50 text-slate-900 flex flex-col min-h-screen`}
         >
-          <Header />
+          {/* <Header /> */}
 
           <main className="flex-grow">{children}</main>
 
-          <Footer />
+          {/* <Footer /> */}
         </body>
       </html>
     </ClerkProvider>

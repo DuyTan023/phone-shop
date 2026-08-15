@@ -11,6 +11,7 @@ export type FindManyResultProductSpec = {
   product_specs: Product_Spec[];
   total: number;
 };
+
 export type Product_Spec = Prisma.product_specsGetPayload<{
   include: {
     products: {
@@ -49,73 +50,111 @@ const productSpecInclude = {
   units: true,
 } satisfies Prisma.product_specsInclude;
 
-const buildProductSpecWhere = (keyword?: string) => {
-  if (!keyword) return undefined;
+const buildProductSpecWhere = ({
+  keyword,
+  product_id,
+}: {
+  keyword?: string;
+  product_id?: number;
+}): Prisma.product_specsWhereInput => {
+  const where: Prisma.product_specsWhereInput = {};
 
-  return {
-    products: {
+  // Lọc theo sản phẩm
+  if (product_id !== undefined) {
+    where.product_id = product_id;
+  }
+
+  // Tìm theo tên sản phẩm
+  if (keyword) {
+    where.products = {
       name: {
         contains: keyword,
         mode: "insensitive",
       },
-    },
-  } satisfies Prisma.product_specsWhereInput;
+    };
+  }
+
+  return where;
 };
 
 export const productSpecRepository = {
+  // Lấy danh sách thông số sản phẩm
   findMany: async ({
     page = 1,
     limit = 10,
     keyword,
-  }: FindManyParams): Promise<FindManyResultProductSpec> => {
+    product_id,
+  }: FindManyParams & {
+    product_id?: number;
+  }): Promise<FindManyResultProductSpec> => {
     const skip = (page - 1) * limit;
+
+    const where = buildProductSpecWhere({
+      keyword,
+      product_id,
+    });
+
     const [product_specs, total] = await prisma.$transaction([
       prisma.product_specs.findMany({
-        where: buildProductSpecWhere(keyword),
+        where,
         skip,
         take: limit,
-        orderBy: { id: "asc" },
+        orderBy: {
+          id: "asc",
+        },
         include: productSpecInclude,
       }),
+
       prisma.product_specs.count({
-        where: buildProductSpecWhere(keyword),
+        where,
       }),
     ]);
-    return { product_specs, total };
+
+    return {
+      product_specs,
+      total,
+    };
   },
 
+  // Lấy 1 thông số theo ID
   findById: async (id: number): Promise<Product_Spec | null> => {
     return prisma.product_specs.findUnique({
-      where: { id },
-      include: productSpecInclude,
-    });
-  },
-
-  // Lấy danh sách giá trị thông số của sp
-  findByProductId: async (product_id: number): Promise<Product_Spec | null> => {
-    return prisma.product_specs.findFirst({
       where: {
-        product_id: product_id,
+        id,
       },
       include: productSpecInclude,
     });
   },
-  // Kiểm tra tính duy nhất 1 sp chỉ có 1 thông số đó
+
+  // Lấy TẤT CẢ thông số của một sản phẩm
+  findByProductId: async (product_id: number): Promise<Product_Spec[]> => {
+    return prisma.product_specs.findMany({
+      where: {
+        product_id,
+      },
+      include: productSpecInclude,
+      orderBy: {
+        id: "asc",
+      },
+    });
+  },
+
+  // Kiểm tra một sản phẩm đã có thông số này chưa
   findByProductSpec: async (
     product_id: number,
     spec_key_id: number,
   ): Promise<Product_Spec | null> => {
     return prisma.product_specs.findFirst({
       where: {
-        product_id: product_id,
-        spec_key_id: spec_key_id,
+        product_id,
+        spec_key_id,
       },
       include: productSpecInclude,
     });
   },
 
+  // Lấy thông số của sản phẩm và gom theo nhóm
   getProductSpecsGroupedByGroup: async (productId: number) => {
-    // 1. Truy vấn tất cả thông số của product kèm theo quan hệ Key, Group và Unit
     const specs = await prisma.product_specs.findMany({
       where: {
         product_id: productId,
@@ -126,7 +165,8 @@ export const productSpecRepository = {
         units: {
           select: {
             id: true,
-            // Thêm các field tên đơn vị nếu có (ví dụ: name, symbol)
+            name: true,
+            symbol: true,
           },
         },
         spec_keys: {
@@ -144,13 +184,11 @@ export const productSpecRepository = {
       },
     });
 
-    // 2. Gom nhóm kết quả theo spec_groups bằng JavaScript
     const groupedSpecs = specs.reduce(
       (acc, curr) => {
         const group = curr.spec_keys.spec_groups;
         const groupId = group.id;
 
-        // Nếu nhóm chưa tồn tại trong accumulator thì khởi tạo
         if (!acc[groupId]) {
           acc[groupId] = {
             groupId: group.id,
@@ -159,7 +197,6 @@ export const productSpecRepository = {
           };
         }
 
-        // Đưa thông số vào nhóm tương ứng
         acc[groupId].specs.push({
           specId: curr.id,
           keyId: curr.spec_keys.id,
@@ -172,30 +209,45 @@ export const productSpecRepository = {
       },
       {} as Record<
         number,
-        { groupId: number; groupName: string; specs: any[] }
+        {
+          groupId: number;
+          groupName: string;
+          specs: any[];
+        }
       >,
     );
 
-    // Chuyển object gom nhóm thành dạng mảng danh sách
     return Object.values(groupedSpecs);
   },
+
+  // Tạo thông số
   createProductSpec: async (
     input: CreateProductSpecInput,
   ): Promise<product_specs> => {
-    return prisma.product_specs.create({ data: input });
+    return prisma.product_specs.create({
+      data: input,
+    });
   },
+
+  // Cập nhật thông số
   updateProductSpec: async (
     id: number,
     input: UpdateProductSpecInput,
   ): Promise<product_specs> => {
     return prisma.product_specs.update({
-      where: { id },
+      where: {
+        id,
+      },
       data: input,
     });
   },
+
+  // Xóa thông số
   deleteById: async (id: number): Promise<product_specs> => {
     return prisma.product_specs.delete({
-      where: { id: id },
+      where: {
+        id,
+      },
     });
   },
 };

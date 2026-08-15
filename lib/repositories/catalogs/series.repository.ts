@@ -79,6 +79,19 @@ export const seriesRepository = {
       },
     });
   },
+
+  findByBrandSlug: async (slug: string): Promise<SerieWithBrand[] | null> => {
+    return prisma.series.findMany({
+      where: {
+        brands: {
+          slug: slug,
+        },
+      },
+      include: {
+        brands: true,
+      },
+    });
+  },
   createSeries: async (createSerieInput: CreateSerieInput): Promise<series> => {
     return prisma.series.create({ data: createSerieInput });
   },

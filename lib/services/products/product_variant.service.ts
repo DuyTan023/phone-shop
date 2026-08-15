@@ -81,6 +81,56 @@ export const productVariantService = {
       throw new Error("SERVER_ERROR");
     }
   },
+
+  getProductVariantDefaultBySeriesId: async (
+    serie_id: number,
+  ): Promise<ProductVariant[]> => {
+    try {
+      const product_variants =
+        await productVariantRepository.findDefaultBySeriesId(serie_id);
+
+      if (product_variants.length === 0) {
+        throw new Error("NOT_FOUND");
+      }
+
+      return product_variants;
+    } catch (err) {
+      if (err instanceof Error && err.message === "NOT_FOUND") {
+        throw err;
+      }
+
+      throw new Error("SERVER_ERROR");
+    }
+  },
+
+  getProductVariantDefaultByBrandSlug: async (
+    slug: string,
+  ): Promise<ProductVariant[]> => {
+    try {
+      const product_variants =
+        await productVariantRepository.findDefaultByBrandSlug(slug);
+
+      if (product_variants.length === 0) {
+        throw new Error("NOT_FOUND");
+      }
+
+      return product_variants;
+    } catch (err) {
+      if (err instanceof Error && err.message === "NOT_FOUND") {
+        throw err;
+      }
+
+      throw new Error("SERVER_ERROR");
+    }
+  },
+
+  getAllDefaultProductVariants: async (): Promise<ProductVariant[]> => {
+    try {
+      return await productVariantRepository.findAllDefault();
+    } catch {
+      throw new Error("SERVER_ERROR");
+    }
+  },
   createProductVariant: async (
     input: CreateProductVariantInput,
   ): Promise<product_variants> => {
