@@ -7,8 +7,10 @@ import type { ApiResponse } from "@/lib/types/public/types";
 
 export async function GET(req: NextRequest) {
   try {
+    const keyword = req.nextUrl.searchParams.get("keyword") ?? undefined;
+
     const product_variants =
-      await productVariantService.getAllDefaultProductVariants();
+      await productVariantService.getAllDefaultProductVariants(keyword);
 
     return NextResponse.json<ApiResponse<ProductVariant[]>>({
       success: true,

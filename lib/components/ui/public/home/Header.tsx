@@ -10,6 +10,7 @@ import {
   useUser,
 } from "@clerk/nextjs";
 import {
+  Loader2,
   LogOut,
   MapPin,
   PhoneCall,
@@ -18,18 +19,97 @@ import {
   Truck,
   User,
 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
+import { useEffect, useRef, useState } from "react";
+
+interface ProductVariant {
+  id: number;
+  price: string;
+  products: {
+    name: string;
+    slug: string;
+  };
+  storages?: {
+    value: string;
+  };
+  rams?: {
+    value: string;
+  };
+  colors?: {
+    name: string;
+  };
+  product_images?: {
+    image_url: string;
+    is_featured: boolean;
+  }[];
+}
 
 export default function Header() {
-  console.log("HEADER RENDERED");
   const { user } = useUser();
-
   const { isLoaded, isSignedIn } = useAuth();
 
-  console.log("CLERK STATUS:", {
-    isLoaded,
-    isSignedIn,
-  });
+  const [keyword, setKeyword] = useState("");
+  const [suggestions, setSuggestions] = useState<ProductVariant[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [showPopup, setShowPopup] = useState(false);
+
+  const searchRef = useRef<HTMLDivElement>(null);
+
+  // Xử lý ẩn popup khi click ra ngoài ô tìm kiếm
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        searchRef.current &&
+        !searchRef.current.contains(event.target as Node)
+      ) {
+        setShowPopup(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  // Chỉ dùng useEffect để gọi API khi người dùng thực sự nhập từ khóa hợp lệ
+  useEffect(() => {
+    const trimmedKeyword = keyword.trim();
+
+    if (!trimmedKeyword) {
+      return; // Không gọi API nếu từ khóa trống
+    }
+
+    const delayDebounceFn = setTimeout(async () => {
+      setIsLoading(true);
+      try {
+        const res = await fetch(
+          `/api/product_manager/product_variants/default?keyword=${encodeURIComponent(trimmedKeyword)}`,
+        );
+        const data = await res.json();
+        if (data.success) {
+          setSuggestions(data.data || []);
+          setShowPopup(true);
+        }
+      } catch (error) {
+        console.error("Lỗi khi tìm kiếm sản phẩm:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [keyword]);
+
+  // Xử lý thay đổi input đồng thời reset state ngay tại đây nếu input trống
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setKeyword(value);
+    if (!value.trim()) {
+      setSuggestions([]);
+      setShowPopup(false);
+    }
+  };
 
   return (
     <header className="sticky top-0 z-50 bg-blue-600 text-white shadow-md">
@@ -50,16 +130,101 @@ export default function Header() {
           </span>
         </Link>
 
-        {/* Thanh tìm kiếm */}
-        <div className="flex-1 max-w-lg relative">
-          <input
-            type="text"
-            placeholder="Bạn tìm điện thoại gì? (iPhone 15, Galaxy S24...)"
-            className="w-full pl-4 pr-10 py-2 bg-white text-slate-900 placeholder:text-slate-400 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-300 shadow-inner transition"
-          />
-          <button className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-blue-600 transition">
-            <Search className="w-4 h-4" />
-          </button>
+        {/* Thanh tìm kiếm kèm Popup Gợi ý */}
+        <div className="flex-1 max-w-lg relative" ref={searchRef}>
+          <div className="relative">
+            <input
+              type="text"
+              value={keyword}
+              onChange={handleSearchChange}
+              onFocus={() => {
+                if (suggestions.length > 0) setShowPopup(true);
+              }}
+              placeholder="Bạn tìm điện thoại gì? (iPhone 15, Galaxy S24...)"
+              className="w-full pl-4 pr-10 py-2 bg-white text-slate-900 placeholder:text-slate-400 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-300 shadow-inner transition"
+            />
+            <button className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-blue-600 transition">
+              {isLoading ? (
+                <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+              ) : (
+                <Search className="w-4 h-4" />
+              )}
+            </button>
+          </div>
+
+          {/* Popup Gợi ý sản phẩm */}
+          {showPopup && (
+            <div className="absolute left-0 right-0 mt-2 bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden z-50 text-slate-800 max-h-[420px] overflow-y-auto">
+              <div className="p-3 bg-slate-50 border-b border-slate-100 text-xs font-bold text-slate-600">
+                Sản phẩm gợi ý
+              </div>
+
+              {suggestions.length > 0 ? (
+                <div className="divide-y divide-slate-100">
+                  {suggestions.map((item) => {
+                    const featuredImage =
+                      item.product_images?.find((img) => img.is_featured)
+                        ?.image_url || item.product_images?.[0]?.image_url;
+                    const formattedPrice = new Intl.NumberFormat("vi-VN", {
+                      style: "currency",
+                      currency: "VND",
+                    }).format(Number(item.price));
+
+                    return (
+                      <Link
+                        key={item.id}
+                        href={`/products/${item.products.slug}`}
+                        onClick={() => setShowPopup(false)}
+                        className="flex items-center gap-3 p-3 hover:bg-blue-50/60 transition group"
+                      >
+                        {/* Hình ảnh sản phẩm */}
+                        <div className="w-12 h-12 relative shrink-0 bg-slate-100 rounded-lg overflow-hidden border border-slate-200">
+                          {featuredImage ? (
+                            <Image
+                              src={featuredImage}
+                              alt={item.products.name}
+                              fill
+                              className="object-cover group-hover:scale-105 transition"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-[10px] text-slate-400">
+                              No img
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Thông tin tên và cấu hình */}
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-xs font-bold text-slate-900 truncate group-hover:text-blue-600 transition">
+                            {item.products.name}{" "}
+                            {item.storages?.value
+                              ? `- ${item.storages.value}`
+                              : ""}
+                          </h4>
+                          <div className="flex items-center gap-2 mt-0.5 text-[11px] text-slate-500">
+                            {item.rams?.value && (
+                              <span>RAM: {item.rams.value}</span>
+                            )}
+                            {item.colors?.name && (
+                              <span>• Màu: {item.colors.name}</span>
+                            )}
+                          </div>
+                          <div className="text-xs font-black text-rose-600 mt-1">
+                            {formattedPrice}
+                          </div>
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="p-6 text-center text-xs text-slate-500">
+                  Không tìm thấy sản phẩm phù hợp với từ khóa &ldquo;{keyword}
+                  &rdquo;
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Actions / Utilities */}
@@ -88,8 +253,6 @@ export default function Header() {
           </Link>
 
           {/* ================= PHẦN XÁC THỰC CLERK ================= */}
-
-          {/* CHƯA ĐĂNG NHẬP: Hiển thị nút Đăng Nhập & Đăng Ký */}
           <Show when="signed-out">
             <div className="flex items-center gap-1.5">
               <SignInButton mode="modal">
@@ -107,10 +270,8 @@ export default function Header() {
             </div>
           </Show>
 
-          {/* ĐÃ ĐĂNG NHẬP: Hiển thị Profile + Nút Đăng xuất */}
           <Show when="signed-in">
             <div className="flex items-center gap-3 bg-blue-700/40 p-1 pl-3 rounded-2xl border border-blue-500/40">
-              {/* Tên & Email người dùng */}
               <div className="hidden md:flex flex-col items-end leading-tight">
                 <span className="text-xs font-bold text-white max-w-[120px] truncate">
                   {user?.firstName || user?.username || "Tài khoản"}
@@ -120,7 +281,6 @@ export default function Header() {
                 </span>
               </div>
 
-              {/* Avatar Clerk */}
               <UserButton
                 appearance={{
                   elements: {
@@ -138,7 +298,6 @@ export default function Header() {
                 </UserButton.MenuItems>
               </UserButton>
 
-              {/* Nút Đăng xuất trực tiếp */}
               <SignOutButton>
                 <button
                   title="Đăng xuất"
@@ -157,8 +316,6 @@ export default function Header() {
           >
             <ShoppingCart className="w-4 h-4 text-blue-600" />
             <span className="hidden sm:inline">Giỏ hàng</span>
-
-            {/* Badge số lượng - Đã tối ưu vị trí */}
             <span className="absolute top-0 right-0 translate-x-1/3 -translate-y-1/3 bg-red-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-black shadow z-10 border border-white">
               2
             </span>

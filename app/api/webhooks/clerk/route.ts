@@ -3,6 +3,7 @@
 import { headers } from "next/headers";
 import { Webhook } from "svix";
 
+import { cartService } from "@/lib/services/cart/cart.service";
 import { userService } from "@/lib/services/users/users.service";
 
 type ClerkWebhookEvent = {
@@ -119,13 +120,15 @@ export async function POST(req: Request) {
           [data.first_name, data.last_name].filter(Boolean).join(" ") || null;
 
         try {
-          await userService.createUser({
+          const user = await userService.createUser({
             clerk_id: data.id,
             email,
             full_name: fullName ?? undefined,
             phone: primaryPhone?.phone_number,
             avatar_url: data.image_url || undefined,
           });
+
+          await cartService.createCart(user.id);
         } catch (err) {
           if (err instanceof Error && err.message === "USER_EXISTS") {
             // Webhook được gửi lại nhưng user đã tồn tại

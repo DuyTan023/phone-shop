@@ -2,11 +2,11 @@ import { userService } from "@/lib/services/users/users.service";
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 
-export async function requireAuth() {
+export async function requireAuth(redirectTo = "/") {
   const { userId } = await auth();
 
   if (!userId) {
-    throw new Error("UNAUTHORIZED");
+    redirect(`/sign-in?redirect_url=${encodeURIComponent(redirectTo)}`);
   }
 
   const user = await userService.getUserByClerkId(userId);
@@ -18,12 +18,12 @@ export async function requireAuth() {
   return user;
 }
 
-export async function requireAdmin() {
+export async function requireAdmin(redirectTo = "/admin") {
   let user;
 
   try {
     // Chỉ bọc phần lấy thông tin và check lỗi xác thực/block vào try/catch
-    user = await requireAuth();
+    user = await requireAuth(redirectTo);
   } catch (error) {
     // Ném lại lỗi UNAUTHORIZED hoặc USER_BLOCKED để layout/page bên ngoài xử lý
     throw error;

@@ -26,6 +26,8 @@ import {
 } from "@/components/ui/sidebar";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+
+import { Show, SignOutButton, UserButton, useUser } from "@clerk/nextjs";
 import {
   BarChart3,
   Bell,
@@ -262,6 +264,7 @@ export default function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const { user } = useUser();
   const pathname = usePathname();
 
   // Tìm title hiển thị theo đường dẫn hiện tại
@@ -321,11 +324,36 @@ export default function AdminLayout({
               </span>
             </button>
 
-            <Avatar className="h-8 w-8 cursor-pointer">
-              <AvatarFallback className="bg-blue-600 text-xs font-bold text-white">
-                AD
-              </AvatarFallback>
-            </Avatar>
+            <Show when="signed-in">
+              <div className="flex items-center gap-3 bg-white p-1 pl-3 rounded-2xl border border-slate-900 shadow-sm">
+                <div className="hidden md:flex flex-col items-end leading-tight">
+                  <span className="text-xs font-bold text-slate-900 max-w-[120px] truncate">
+                    {user?.firstName || user?.username || "Tài khoản"}
+                  </span>
+                  <span className="text-[10px] text-slate-600 max-w-[120px] truncate">
+                    {user?.primaryEmailAddress?.emailAddress}
+                  </span>
+                </div>
+
+                <UserButton
+                  appearance={{
+                    elements: {
+                      userButtonAvatarBox:
+                        "w-8 h-8 rounded-full border-2 border-slate-900/40 hover:border-slate-900 transition shadow-sm",
+                    },
+                  }}
+                ></UserButton>
+
+                <SignOutButton>
+                  <button
+                    title="Đăng xuất"
+                    className="p-1.5 text-slate-600 hover:text-white hover:bg-rose-600 rounded-xl transition-all"
+                  >
+                    <LogOut className="w-4 h-4" />
+                  </button>
+                </SignOutButton>
+              </div>
+            </Show>
           </div>
         </header>
 

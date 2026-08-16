@@ -56,6 +56,12 @@ export const brandRepository = {
     });
   },
 
+  findById: async (id: number): Promise<brands | null> => {
+    return prisma.brands.findFirst({
+      where: { id: id },
+    });
+  },
+
   createBrand: async (input: CreateBrandInput): Promise<brands> => {
     return prisma.brands.create({ data: input });
   },

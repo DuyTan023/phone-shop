@@ -128,6 +128,71 @@ const buildVariantWhere = (
   return where;
 };
 
+const attachColorImages = async (
+  variants: ProductVariant[],
+): Promise<ProductVariant[]> => {
+  if (variants.length === 0) return variants;
+
+  const productIds = [
+    ...new Set(variants.map((variant) => variant.product_id)),
+  ];
+
+  const images = await prisma.product_images.findMany({
+    where: {
+      product_id: {
+        in: productIds,
+      },
+      is_featured: true,
+      variant_id: {
+        not: null,
+      },
+    },
+    include: {
+      product_variants: {
+        select: {
+          product_id: true,
+          color_id: true,
+        },
+      },
+    },
+    orderBy: {
+      id: "asc",
+    },
+  });
+
+  const imageMap = new Map<string, (typeof images)[number]>();
+
+  for (const image of images) {
+    if (!image.product_variants) continue;
+
+    const key = `${image.product_variants.product_id}-${image.product_variants.color_id}`;
+
+    if (!imageMap.has(key)) {
+      imageMap.set(key, image);
+    }
+  }
+
+  return variants.map((variant) => {
+    const key = `${variant.product_id}-${variant.color_id}`;
+    const image = imageMap.get(key);
+
+    return {
+      ...variant,
+      product_images: image
+        ? [
+            {
+              id: image.id,
+              product_id: image.product_id,
+              variant_id: image.variant_id,
+              image_url: image.image_url,
+              is_featured: image.is_featured,
+            },
+          ]
+        : [],
+    };
+  });
+};
+
 export const productVariantRepository = {
   findMany: async ({
     page = 1,
@@ -189,7 +254,7 @@ export const productVariantRepository = {
   findDefaultBySeriesId: async (
     seriesId: number,
   ): Promise<ProductVariant[]> => {
-    return prisma.product_variants.findMany({
+    const variants = await prisma.product_variants.findMany({
       where: {
         is_default: true,
         products: {
@@ -201,10 +266,12 @@ export const productVariantRepository = {
         product_id: "asc",
       },
     });
+
+    return attachColorImages(variants);
   },
 
   findDefaultByBrandSlug: async (slug: string): Promise<ProductVariant[]> => {
-    return prisma.product_variants.findMany({
+    const variants = await prisma.product_variants.findMany({
       where: {
         is_default: true,
         products: {
@@ -220,18 +287,51 @@ export const productVariantRepository = {
         product_id: "asc",
       },
     });
+
+    return attachColorImages(variants);
   },
 
-  findAllDefault: async (): Promise<ProductVariant[]> => {
-    return prisma.product_variants.findMany({
+  findDefaultByBrandId: async (id: number): Promise<ProductVariant[]> => {
+    const variants = await prisma.product_variants.findMany({
       where: {
         is_default: true,
+        products: {
+          series: {
+            brands: {
+              id: id,
+            },
+          },
+        },
       },
       include: productVariantInclude,
       orderBy: {
         product_id: "asc",
       },
     });
+
+    return attachColorImages(variants);
+  },
+
+  findAllDefault: async (keyword?: string): Promise<ProductVariant[]> => {
+    const variants = await prisma.product_variants.findMany({
+      where: {
+        is_default: true,
+        ...(keyword?.trim() && {
+          products: {
+            name: {
+              contains: keyword.trim(),
+              mode: "insensitive",
+            },
+          },
+        }),
+      },
+      include: productVariantInclude,
+      orderBy: {
+        product_id: "asc",
+      },
+    });
+
+    return attachColorImages(variants);
   },
 
   create: async (

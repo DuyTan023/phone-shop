@@ -622,49 +622,128 @@ export default function HomePage() {
               return (
                 <div
                   key={variant.id}
-                  className="bg-white rounded-xl border border-slate-100 p-4 shadow-sm hover:shadow-md transition flex flex-col justify-between group"
+                  className="
+    group relative flex flex-col justify-between
+    overflow-hidden rounded-2xl
+    border border-slate-200/80
+    bg-white p-4
+    shadow-[0_2px_8px_rgba(15,23,42,0.06)]
+    transition-all duration-300 ease-out
+    hover:-translate-y-1.5
+    hover:border-blue-200
+    hover:shadow-[0_12px_30px_rgba(37,99,235,0.15)]
+  "
                 >
                   <div>
-                    <div className="relative aspect-square w-full mb-3 bg-slate-50 rounded-lg overflow-hidden flex items-center justify-center">
-                      <span className="absolute top-2 left-2 bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded z-10">
+                    {/* IMAGE */}
+                    <div
+                      className="
+        relative mb-4 aspect-square w-full
+        overflow-hidden rounded-xl
+        bg-gradient-to-br from-slate-50 to-slate-100
+        ring-1 ring-slate-200/60
+        transition-all duration-300
+        group-hover:ring-blue-200
+        group-hover:shadow-inner
+      "
+                    >
+                      <span
+                        className="
+          absolute left-2.5 top-2.5 z-10
+          rounded-full
+          bg-red-500 px-2.5 py-1
+          text-[10px] font-bold text-white
+          shadow-md shadow-red-500/20
+        "
+                      >
                         {variant.colors?.name || "Chính hãng"}
                       </span>
-                      <div className="w-full h-full flex items-center justify-center bg-slate-100">
+
+                      <div
+                        className="
+          flex h-full w-full items-center justify-center
+          transition-transform duration-500
+          group-hover:scale-105
+        "
+                      >
                         <img
                           src={
                             variant.product_images[0]?.image_url ??
                             "/placeholder.png"
                           }
                           alt={variant.products.name}
-                          className="w-full h-full object-contain"
+                          className="h-full w-full object-contain p-3"
                         />
                       </div>
+
+                      {/* lớp sáng nhẹ khi hover */}
+                      <div
+                        className="
+          pointer-events-none absolute inset-0
+          bg-gradient-to-tr from-blue-500/0 via-white/0 to-white/40
+          opacity-0 transition-opacity duration-300
+          group-hover:opacity-100
+        "
+                      />
                     </div>
 
-                    <div className="flex gap-1 mb-2">
+                    {/* RAM / STORAGE */}
+                    <div className="mb-2.5 flex gap-1.5">
                       {variant.rams?.value && (
-                        <span className="text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded font-medium">
+                        <span
+                          className="
+            rounded-md bg-slate-100 px-2 py-1
+            text-[10px] font-semibold text-slate-600
+            transition-colors
+            group-hover:bg-blue-50 group-hover:text-blue-600
+          "
+                        >
                           RAM: {variant.rams.value}
                         </span>
                       )}
+
                       {variant.storages?.value && (
-                        <span className="text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded font-medium">
+                        <span
+                          className="
+            rounded-md bg-slate-100 px-2 py-1
+            text-[10px] font-semibold text-slate-600
+            transition-colors
+            group-hover:bg-blue-50 group-hover:text-blue-600
+          "
+                        >
                           {variant.storages.value}
                         </span>
                       )}
                     </div>
 
-                    <h3 className="font-semibold text-slate-800 text-sm line-clamp-2 group-hover:text-blue-600 transition mb-2">
+                    {/* PRODUCT NAME */}
+                    <h3
+                      className="
+        mb-2 line-clamp-2
+        text-sm font-semibold leading-5 text-slate-800
+        transition-colors duration-200
+        group-hover:text-blue-600
+      "
+                    >
                       {variant.products?.name} - {variant.colors?.name} (
                       {variant.storages?.value})
                     </h3>
                   </div>
 
-                  <div className="space-y-2 mt-2 pt-2 border-t border-slate-50">
+                  {/* FOOTER */}
+                  <div
+                    className="
+      mt-2 space-y-2.5
+      border-t border-slate-100
+      pt-3
+    "
+                  >
+                    {/* PRICE */}
                     <div className="flex items-baseline gap-2">
-                      <span className="text-base font-bold text-blue-600">
+                      <span className="text-lg font-extrabold tracking-tight text-blue-600">
                         {formattedPrice}đ
                       </span>
+
                       {formattedCostPrice && (
                         <span className="text-xs text-slate-400 line-through">
                           {formattedCostPrice}đ
@@ -672,17 +751,40 @@ export default function HomePage() {
                       )}
                     </div>
 
-                    <div className="flex items-center justify-between text-xs text-slate-500">
+                    {/* RATING + BUTTON */}
+                    <div className="flex items-center justify-between">
                       <div className="flex items-center gap-1 text-yellow-500">
-                        <Star className="w-3.5 h-3.5 fill-yellow-400" />
-                        <span className="font-medium text-slate-700">4.9</span>
-                        <span className="text-slate-400">
+                        <Star className="h-3.5 w-3.5 fill-yellow-400" />
+
+                        <span className="text-xs font-bold text-slate-700">
+                          4.9
+                        </span>
+
+                        <span className="text-xs text-slate-400">
                           ({variant.stock})
                         </span>
                       </div>
-                      <button className="bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white px-2.5 py-1 rounded text-xs font-semibold transition">
-                        Mua ngay
-                      </button>
+
+                      <Link
+                        href={`/products/${variant.products.slug}?variant=${variant.id}`}
+                      >
+                        <button
+                          className="
+          rounded-lg
+          bg-blue-50 px-3 py-1.5
+          text-xs font-bold text-blue-600
+          shadow-sm
+          transition-all duration-200
+          hover:-translate-y-0.5
+          hover:bg-blue-600
+          hover:text-white
+          hover:shadow-md hover:shadow-blue-600/25
+          active:translate-y-0
+        "
+                        >
+                          Chi tiết
+                        </button>
+                      </Link>
                     </div>
                   </div>
                 </div>

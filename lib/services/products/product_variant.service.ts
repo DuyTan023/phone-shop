@@ -124,9 +124,32 @@ export const productVariantService = {
     }
   },
 
-  getAllDefaultProductVariants: async (): Promise<ProductVariant[]> => {
+  getProductVariantDefaultByBrandId: async (
+    id: number,
+  ): Promise<ProductVariant[]> => {
     try {
-      return await productVariantRepository.findAllDefault();
+      const product_variants =
+        await productVariantRepository.findDefaultByBrandId(id);
+
+      if (product_variants.length === 0) {
+        throw new Error("NOT_FOUND");
+      }
+
+      return product_variants;
+    } catch (err) {
+      if (err instanceof Error && err.message === "NOT_FOUND") {
+        throw err;
+      }
+
+      throw new Error("SERVER_ERROR");
+    }
+  },
+
+  getAllDefaultProductVariants: async (
+    keyword?: string,
+  ): Promise<ProductVariant[]> => {
+    try {
+      return await productVariantRepository.findAllDefault(keyword);
     } catch {
       throw new Error("SERVER_ERROR");
     }
