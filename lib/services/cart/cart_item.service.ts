@@ -42,10 +42,7 @@ export const cartItemService = {
       throw new Error("CART_NOT_FOUND");
     }
 
-    const item = await cartItemRepository.findByCartIdAndVariantId(
-      cart.id,
-      itemId,
-    );
+    const item = await cartItemRepository.findByCartIdAndId(cart.id, itemId);
 
     if (!item) {
       throw new Error("CART_ITEM_NOT_FOUND");
@@ -62,10 +59,7 @@ export const cartItemService = {
       throw new Error("CART_NOT_FOUND");
     }
 
-    const item = await cartItemRepository.findByCartIdAndVariantId(
-      cart.id,
-      itemId,
-    );
+    const item = await cartItemRepository.findByCartIdAndId(cart.id, itemId);
 
     if (!item) {
       throw new Error("CART_ITEM_NOT_FOUND");

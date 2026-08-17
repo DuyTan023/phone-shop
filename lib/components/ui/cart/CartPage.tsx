@@ -1,53 +1,102 @@
 "use client";
-
-import CartItem, { type CartItemData } from "@/lib/components/ui/cart/CartItem";
-import { useState } from "react";
-
-const initialItems: CartItemData[] = [
-  {
-    id: 1,
-    name: "iPhone 15 Pro Max",
-    slug: "iphone-15-pro-max",
-    image: "/images/products/iphone-15-pro-max.jpg",
-    color: "Titan Tự Nhiên",
-    ram: "8GB",
-    storage: "256GB",
-    price: 29990000,
-    quantity: 1,
-    stock: 10,
-  },
-  {
-    id: 2,
-    name: "Samsung Galaxy S24 Ultra",
-    slug: "samsung-galaxy-s24-ultra",
-    image: "/images/products/s24-ultra.jpg",
-    color: "Đen",
-    ram: "12GB",
-    storage: "256GB",
-    price: 27990000,
-    quantity: 1,
-    stock: 5,
-  },
-];
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
+import CartItem from "@/lib/components/ui/cart/CartItem";
+import type { Cart_Item } from "@/lib/repositories/cart/cart_item.repository";
+import { ChevronRight, Home } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 
 export default function CartPage() {
-  const [items, setItems] = useState<CartItemData[]>(initialItems);
+  const [items, setItems] = useState<Cart_Item[]>([]);
 
   // State quản lý danh sách các id sản phẩm đang được chọn (Mặc định ban đầu chưa chọn gì)
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
 
-  const handleQuantityChange = (id: number, quantity: number) => {
-    setItems((current) =>
-      current.map((item) => (item.id === id ? { ...item, quantity } : item)),
-    );
+  const fetchCartItems = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/users/cart/items`, { cache: "no-store" });
+      const json = await res.json();
+      if (json.success) {
+        setItems(json.data || []);
+      }
+    } catch (err) {
+      console.error("Lỗi lấy danh sách cart item:", err);
+    }
+  }, []);
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        await fetchCartItems();
+      } catch (err) {
+        console.error("Lỗi khi tải cart items:", err);
+      } finally {
+      }
+    }
+
+    fetchData();
+  }, [fetchCartItems]);
+
+  const handleQuantityChange = async (id: number, quantity: number) => {
+    try {
+      const res = await fetch(`/api/users/cart/items/${id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          quantity,
+        }),
+      });
+
+      const json = await res.json();
+
+      if (!res.ok || !json.success) {
+        console.error(json.message);
+        return;
+      }
+
+      // Cập nhật UI ngay sau khi API thành công
+      setItems((prev) =>
+        prev.map((item) =>
+          item.id === id
+            ? {
+                ...item,
+                quantity,
+              }
+            : item,
+        ),
+      );
+    } catch (error) {
+      console.error("Lỗi cập nhật số lượng:", error);
+    }
   };
 
-  const handleRemove = (id: number) => {
-    setItems((current) => current.filter((item) => item.id !== id));
-    // Đồng thời loại bỏ id khỏi danh sách đã chọn nếu có
-    setSelectedIds((current) =>
-      current.filter((selectedId) => selectedId !== id),
-    );
+  const handleRemove = async (id: number) => {
+    try {
+      const res = await fetch(`/api/users/cart/items/${id}`, {
+        method: "DELETE",
+      });
+
+      const json = await res.json();
+
+      if (!res.ok || !json.success) {
+        console.error(json.message);
+        return;
+      }
+
+      // Xóa khỏi UI
+      setItems((prev) => prev.filter((item) => item.id !== id));
+      window.dispatchEvent(new Event("cart-updated"));
+    } catch (error) {
+      console.error("Lỗi xóa cart item:", error);
+    }
   };
 
   // Xử lý chọn/bỏ chọn 1 sản phẩm
@@ -71,13 +120,43 @@ export default function CartPage() {
   // Tính tổng tiền chỉ dựa trên các sản phẩm được chọn
   const total = items
     .filter((item) => selectedIds.includes(item.id))
-    .reduce((sum, item) => sum + item.price * item.quantity, 0);
+    .reduce(
+      (sum, item) => sum + Number(item.product_variants.price) * item.quantity,
+      0,
+    );
 
   const isAllSelected = items.length > 0 && selectedIds.length === items.length;
 
   return (
     <main className="min-h-screen bg-slate-50/50 py-10">
       <div className="mx-auto max-w-5xl px-4">
+        <div className="mb-6">
+          <Breadcrumb>
+            <BreadcrumbList className="flex items-center gap-1.5 sm:gap-2.5 text-sm font-medium">
+              {/* Trang chủ kèm Icon Home */}
+              <BreadcrumbItem>
+                <BreadcrumbLink
+                  href="/"
+                  className="group flex items-center gap-1.5 text-slate-500 hover:text-blue-600 transition-colors bg-slate-100/70 hover:bg-blue-50 px-3 py-1.5 rounded-xl border border-slate-200/60"
+                >
+                  <Home className="w-4 h-4 text-slate-400 group-hover:text-blue-600 transition-colors" />
+                  <span>Trang chủ</span>
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+
+              <BreadcrumbSeparator>
+                <ChevronRight className="w-4 h-4 text-slate-300" />
+              </BreadcrumbSeparator>
+
+              {/* Tên sản phẩm ở cuối */}
+              <BreadcrumbItem>
+                <BreadcrumbPage className="max-w-[200px] sm:max-w-xs md:max-w-md truncate font-bold text-blue-600 bg-blue-50/80 border border-blue-100 px-3 py-1.5 rounded-xl">
+                  Giỏ hàng
+                </BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
+        </div>
         <div className="mb-8 flex items-center justify-between">
           <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">
             Giỏ hàng của bạn

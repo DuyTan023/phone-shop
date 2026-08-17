@@ -18,6 +18,22 @@ export async function requireAuth(redirectTo = "/") {
   return user;
 }
 
+export async function requireApiAuth() {
+  const { userId } = await auth();
+  console.log("user-id: ", userId);
+  if (!userId) {
+    throw new Error("UNAUTHORIZED");
+  }
+
+  const user = await userService.getUserByClerkId(userId);
+
+  if (user.status === "BLOCKED") {
+    throw new Error("USER_BLOCKED");
+  }
+
+  return user;
+}
+
 export async function requireAdmin(redirectTo = "/admin") {
   let user;
 

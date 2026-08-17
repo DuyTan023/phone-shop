@@ -4,6 +4,7 @@ import { Inter as FontInter } from "next/font/google";
 import { viVN } from "@clerk/localizations";
 import { ClerkProvider } from "@clerk/nextjs";
 import "./globals.css";
+import { Toaster } from "sonner";
 
 const inter = FontInter({ subsets: ["vietnamese"] });
 
@@ -26,6 +27,7 @@ export default function RootLayout({
           {/* <Header /> */}
 
           <main className="flex-grow">{children}</main>
+          <Toaster richColors position="bottom-right" closeButton />
 
           {/* <Footer /> */}
         </body>

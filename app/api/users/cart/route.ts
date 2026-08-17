@@ -1,11 +1,11 @@
-import { requireAuth } from "@/lib/clerk-auth/authorization";
+import { requireApiAuth, requireAuth } from "@/lib/clerk-auth/authorization";
 import { cartService } from "@/lib/services/cart/cart.service";
 import { NextResponse } from "next/server";
 
 // Lấy giỏ hàng của user
 export async function GET() {
   try {
-    const user = await requireAuth();
+    const user = await requireApiAuth();
 
     const cart = await cartService.getCartByUserId(user.id);
 

@@ -56,6 +56,27 @@ export default function Header() {
 
   const searchRef = useRef<HTMLDivElement>(null);
 
+  const [cartItemCount, setCartItemCount] = useState(0);
+
+  const fetchCartItemCount = async () => {
+    try {
+      const res = await fetch("/api/users/cart/items", {
+        cache: "no-store",
+      });
+
+      const json = await res.json();
+
+      if (json.success) {
+        const items = json.data || [];
+
+        // Số item trong giỏ = số dòng cart_items
+        setCartItemCount(items.length);
+      }
+    } catch (error) {
+      console.error("Lỗi lấy số lượng giỏ hàng:", error);
+    }
+  };
+
   // Xử lý ẩn popup khi click ra ngoài ô tìm kiếm
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -100,6 +121,25 @@ export default function Header() {
 
     return () => clearTimeout(delayDebounceFn);
   }, [keyword]);
+
+  useEffect(() => {
+    if (!isSignedIn) return;
+
+    const timer = setTimeout(() => {
+      fetchCartItemCount();
+    }, 0);
+
+    const handleCartUpdated = () => {
+      fetchCartItemCount();
+    };
+
+    window.addEventListener("cart-updated", handleCartUpdated);
+
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener("cart-updated", handleCartUpdated);
+    };
+  }, [isSignedIn]);
 
   // Xử lý thay đổi input đồng thời reset state ngay tại đây nếu input trống
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -316,9 +356,11 @@ export default function Header() {
           >
             <ShoppingCart className="w-4 h-4 text-blue-600" />
             <span className="hidden sm:inline">Giỏ hàng</span>
-            <span className="absolute top-0 right-0 translate-x-1/3 -translate-y-1/3 bg-red-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-black shadow z-10 border border-white">
-              2
-            </span>
+            {isSignedIn && (
+              <span className="absolute top-0 right-0 translate-x-1/3 -translate-y-1/3 bg-red-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-black shadow z-10 border border-white">
+                {cartItemCount}
+              </span>
+            )}
           </Link>
         </div>
       </div>

@@ -337,6 +337,7 @@ export default function ProductDetail({
       const result: ApiResponse<cart_items> = await response.json();
 
       if (result.success) {
+        window.dispatchEvent(new Event("cart-updated"));
         toast.success(result.message || "Thêm giỏ hàng thành công", {
           description: `${selectedVariant.products.name} đã thêm vào giỏ hàng`,
         });

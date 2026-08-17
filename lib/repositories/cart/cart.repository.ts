@@ -7,6 +7,9 @@ export const cartRepository = {
       where: {
         user_id: userId,
       },
+      include: {
+        cart_items: true,
+      },
     });
   },
 
