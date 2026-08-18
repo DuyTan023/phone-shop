@@ -1,6 +1,7 @@
 //order.repository.ts
 
 import { prisma } from "@/lib/prisma";
+import type { CreateOrderInput } from "@/lib/types/order/order.type";
 
 export const orderRepository = {
   // Tìm đơn hàng theo ID
@@ -51,6 +52,23 @@ export const orderRepository = {
       data: {
         payment_order_code: data.payment_order_code,
         payment_link_id: data.payment_link_id,
+      },
+    });
+  },
+
+  // Tạo đơn hàng
+  create(data: CreateOrderInput) {
+    return prisma.orders.create({
+      data: {
+        user_id: data.user_id,
+        recipient_name: data.recipient_name,
+        recipient_phone: data.recipient_phone,
+        shipping_address: data.shipping_address,
+        note: data.note,
+        subtotal: data.subtotal,
+        shipping_fee: data.shipping_fee,
+        total_amount: data.total_amount,
+        payment_method: data.payment_method,
       },
     });
   },

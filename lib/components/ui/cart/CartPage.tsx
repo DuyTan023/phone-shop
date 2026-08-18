@@ -269,10 +269,67 @@ export default function CartPage() {
                 <button
                   type="button"
                   disabled={selectedIds.length === 0}
+                  onClick={() => {
+                    if (selectedIds.length > 0) {
+                      const selectedOrderItems = items
+                        .filter((item) => selectedIds.includes(item.id))
+                        .map((item) => {
+                          const price = Number(item.product_variants.price);
+                          const quantity = item.quantity;
+
+                          const variant = item.product_variants;
+
+                          // 👉 Xử lý lấy image_url an toàn tuyệt đối
+                          let imageUrl = "/placeholder.png"; // Đảm bảo bạn có file này trong thư mục public
+
+                          if (
+                            variant?.product_images &&
+                            Array.isArray(variant.product_images) &&
+                            variant.product_images.length > 0
+                          ) {
+                            const firstImageObj = variant.product_images[0];
+                            if (
+                              firstImageObj &&
+                              typeof firstImageObj === "object" &&
+                              "image_url" in firstImageObj
+                            ) {
+                              imageUrl =
+                                (firstImageObj as { image_url: string })
+                                  .image_url || "/placeholder.png";
+                            }
+                          }
+
+                          return {
+                            variant_id: item.variant_id,
+                            product_name:
+                              variant.products?.name || "Sản phẩm không tên",
+                            sku: variant.sku,
+                            variant_info: `Màu: ${variant.colors?.name || ""} - RAM: ${variant.rams?.value || ""} - Bộ nhớ: ${variant.storages?.value || ""}`,
+                            price: price,
+                            quantity: quantity,
+                            total_price: price * quantity,
+                            image_url: imageUrl, // 👉 Đảm bảo chắc chắn trường này luôn tồn tại
+                          };
+                        });
+
+                      // 👉 Kiểm tra xem mảng sau khi map có image_url chưa
+                      console.log(
+                        "Dữ liệu chuẩn bị lưu vào sessionStorage:",
+                        selectedOrderItems,
+                      );
+
+                      sessionStorage.setItem(
+                        "checkout_items",
+                        JSON.stringify(selectedOrderItems),
+                      );
+
+                      window.location.href = "/order";
+                    }
+                  }}
                   className={`w-full rounded-xl py-3.5 font-bold transition-all shadow-md ${
                     selectedIds.length === 0
                       ? "bg-slate-200 text-slate-400 cursor-not-allowed shadow-none"
-                      : "bg-blue-600 text-white hover:bg-blue-700 hover:shadow-blue-200"
+                      : "bg-blue-600 text-white hover:bg-blue-700 hover:shadow-blue-250"
                   }`}
                 >
                   Tiến hành đặt hàng

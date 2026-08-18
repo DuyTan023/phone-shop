@@ -1,6 +1,7 @@
 //order_item.repository.ts
 
 import { prisma } from "@/lib/prisma";
+import type { CreateOrderItemInput } from "@/lib/types/order/order.type";
 
 export const orderItemRepository = {
   // Lấy tất cả các sản phẩm chi tiết thuộc về một đơn hàng cụ thể
@@ -35,6 +36,21 @@ export const orderItemRepository = {
       },
       include: {
         orders: true,
+      },
+    });
+  },
+  // Tạo order item
+  createOrderItem(data: CreateOrderItemInput) {
+    return prisma.order_items.create({
+      data: {
+        order_id: data.order_id,
+        variant_id: data.variant_id,
+        product_name: data.product_name,
+        sku: data.sku,
+        variant_info: data.variant_info,
+        price: data.price,
+        quantity: data.quantity,
+        total_price: data.total_price,
       },
     });
   },
