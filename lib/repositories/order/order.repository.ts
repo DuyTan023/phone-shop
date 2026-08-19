@@ -1,7 +1,31 @@
 //order.repository.ts
 
+import type { order_status } from "@/app/generated/prisma/enums";
 import { prisma } from "@/lib/prisma";
 import type { CreateOrderInput } from "@/lib/types/order/order.type";
+export type OrderStatus =
+  | "PENDING"
+  | "CONFIRMED"
+  | "SHIPPING"
+  | "COMPLETED"
+  | "CANCELLED";
+
+type PaymentStatus = "UNPAID" | "PENDING" | "PAID" | "REFUNDED";
+interface FindManyForAdminParams {
+  keyword?: string;
+  status?: OrderStatus;
+  payment_status?: PaymentStatus;
+  page?: number;
+  limit?: number;
+}
+
+const statusPriority: Record<string, number> = {
+  PENDING: 1,
+  CONFIRMED: 2,
+  SHIPPING: 3,
+  COMPLETED: 4,
+  CANCELLED: 5, // Thấp nhất, nằm ở cuối cùng
+};
 
 export const orderRepository = {
   // Tìm đơn hàng theo ID
@@ -24,6 +48,20 @@ export const orderRepository = {
       },
       include: {
         order_items: true,
+      },
+    });
+  },
+
+  findManyByUserId(userId: number) {
+    return prisma.orders.findMany({
+      where: {
+        user_id: userId,
+      },
+      include: {
+        order_items: true,
+      },
+      orderBy: {
+        created_at: "desc",
       },
     });
   },
@@ -116,6 +154,78 @@ export const orderRepository = {
       },
       data: {
         status: "CANCELLED",
+      },
+      include: {
+        order_items: true,
+      },
+    });
+  },
+
+  findManyForAdmin(params: FindManyForAdminParams = {}) {
+    const { keyword, status, payment_status, page = 1, limit = 10 } = params;
+
+    const normalizedPage = Math.max(1, page);
+    const normalizedLimit = Math.min(Math.max(1, limit), 100);
+
+    const skip = (normalizedPage - 1) * normalizedLimit;
+
+    const keywordTrimmed = keyword?.trim();
+
+    const orderId = keywordTrimmed ? Number(keywordTrimmed) : NaN;
+
+    const where = {
+      status: status ? status : { not: "CANCELLED" as order_status },
+
+      ...(payment_status && {
+        payment_status,
+      }),
+
+      ...(keywordTrimmed && {
+        OR: [
+          ...(Number.isInteger(orderId)
+            ? [
+                {
+                  id: orderId,
+                },
+              ]
+            : []),
+
+          {
+            recipient_name: {
+              contains: keywordTrimmed,
+              mode: "insensitive" as const,
+            },
+          },
+        ],
+      }),
+    };
+    return prisma.$transaction([
+      prisma.orders.count({
+        where,
+      }),
+
+      prisma.orders.findMany({
+        where,
+        orderBy: {
+          created_at: "desc",
+        },
+        skip,
+        take: normalizedLimit,
+        include: {
+          order_items: true,
+          users: true,
+        },
+      }),
+    ]);
+  },
+
+  updateStatus(id: number, status: OrderStatus) {
+    return prisma.orders.update({
+      where: {
+        id,
+      },
+      data: {
+        status,
       },
     });
   },

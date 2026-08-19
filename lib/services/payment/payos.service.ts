@@ -8,6 +8,7 @@ export type PayOSPaymentItem = {
 };
 
 export type CreatePayOSPaymentInput = {
+  orderId: number;
   orderCode: number;
   amount: number;
   description: string;
@@ -22,7 +23,7 @@ export const payOSService = {
       amount: input.amount,
       description: input.description,
       items: input.items,
-      cancelUrl: `${process.env.NEXT_PUBLIC_APP_URL}/payment/cancel`,
+      cancelUrl: `${process.env.NEXT_PUBLIC_APP_URL}/payment/cancel?orderId=${input.orderId}`,
       returnUrl: `${process.env.NEXT_PUBLIC_APP_URL}/payment/success`,
     });
   },

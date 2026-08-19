@@ -308,11 +308,10 @@ export default function CartPage() {
                             price: price,
                             quantity: quantity,
                             total_price: price * quantity,
-                            image_url: imageUrl, // 👉 Đảm bảo chắc chắn trường này luôn tồn tại
+                            image_url: imageUrl, //
                           };
                         });
 
-                      // 👉 Kiểm tra xem mảng sau khi map có image_url chưa
                       console.log(
                         "Dữ liệu chuẩn bị lưu vào sessionStorage:",
                         selectedOrderItems,
@@ -323,7 +322,7 @@ export default function CartPage() {
                         JSON.stringify(selectedOrderItems),
                       );
 
-                      window.location.href = "/order";
+                      window.location.href = "/checkout";
                     }
                   }}
                   className={`w-full rounded-xl py-3.5 font-bold transition-all shadow-md ${

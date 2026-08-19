@@ -51,6 +51,7 @@ export const orderItemRepository = {
         price: data.price,
         quantity: data.quantity,
         total_price: data.total_price,
+        image_url: data.image_url,
       },
     });
   },

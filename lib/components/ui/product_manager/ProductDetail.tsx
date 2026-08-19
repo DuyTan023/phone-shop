@@ -27,6 +27,17 @@ import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
+export interface CheckoutItem {
+  variant_id: number;
+  product_name: string;
+  sku: string;
+  variant_info: string;
+  price: number;
+  quantity: number;
+  total_price: number;
+  image_url: string;
+}
+
 const formatPrice = (price: number | string) => {
   const numPrice = Number(price);
   if (isNaN(numPrice)) return "Liên hệ";
@@ -66,6 +77,47 @@ export default function ProductDetail({
   /* =========================================================
       1. FETCH ẢNH CHUNG (TYPE = GENERAL)
   ========================================================= */
+  const getVariantImage = (variant: ProductVariant): string => {
+    if (
+      variant.product_images &&
+      Array.isArray(variant.product_images) &&
+      variant.product_images.length > 0
+    ) {
+      const image = variant.product_images[0];
+
+      if (image?.image_url) {
+        return image.image_url;
+      }
+    }
+
+    const fallbackImage = productVariants.find(
+      (v) =>
+        v.products?.id === variant.products?.id && v.product_images?.length > 0,
+    )?.product_images?.[0]?.image_url;
+
+    return fallbackImage || "/placeholder.png";
+  };
+
+  const createCheckoutItem = (
+    variant: ProductVariant,
+    quantity: number = 1,
+  ): CheckoutItem => {
+    const price = Number(variant.price);
+    return {
+      variant_id: variant.id,
+      product_name:
+        variant.products?.name || product.name || "Sản phẩm không tên",
+      sku: variant.sku,
+      variant_info: `Màu: ${variant.colors?.name || ""} - RAM: ${
+        variant.rams?.value || ""
+      } - Bộ nhớ: ${variant.storages?.value || ""}`,
+      price,
+      quantity,
+      total_price: price * quantity,
+      image_url: getVariantImage(variant),
+    };
+  };
+
   const fetchGeneralImages = useCallback(async () => {
     try {
       const res = await fetch(
@@ -350,6 +402,34 @@ export default function ProductDetail({
     }
   };
 
+  const handleBuyNow = (variant: ProductVariant) => {
+    try {
+      if (!variant) {
+        toast.error("Vui lòng chọn phiên bản sản phẩm");
+        return;
+      }
+      if (variant.status !== true) {
+        toast.error("Sản phẩm hiện không kinh doanh");
+        return;
+      }
+      if (!variant.stock || variant.stock <= 0) {
+        toast.error("Sản phẩm đã hết hàng");
+        return;
+      }
+      const checkoutItem = createCheckoutItem(variant, 1);
+      const checkoutItems: CheckoutItem[] = [checkoutItem];
+      console.log(
+        "Dữ liệu Mua ngay chuẩn bị lưu vào sessionStorage:",
+        checkoutItems,
+      );
+      sessionStorage.setItem("checkout_items", JSON.stringify(checkoutItems));
+      window.location.href = "/checkout";
+    } catch (error) {
+      console.error("Lỗi khi thực hiện Mua ngay:", error);
+      toast.error("Không thể tiến hành đặt hàng. Vui lòng thử lại!");
+    }
+  };
+
   const previousImage = () => {
     if (images.length === 0) return;
     setSelectedImage((prev) => (prev === 0 ? images.length - 1 : prev - 1));
@@ -597,9 +677,19 @@ export default function ProductDetail({
                 <ShoppingCart className="w-5 h-5" />
                 Thêm vào giỏ hàng
               </button>
+
               <button
                 type="button"
-                disabled={selectedVariant?.status !== true}
+                disabled={
+                  selectedVariant?.status !== true ||
+                  !selectedVariant ||
+                  selectedVariant.stock <= 0
+                }
+                onClick={() => {
+                  if (selectedVariant) {
+                    handleBuyNow(selectedVariant);
+                  }
+                }}
                 className="flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Zap className="w-5 h-5" />

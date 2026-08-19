@@ -116,7 +116,6 @@ const attachColorImages = async (items: Cart_Item[]): Promise<Cart_Item[]> => {
       product_id: {
         in: productIds,
       },
-      is_featured: true,
       variant_id: {
         not: null,
       },
@@ -129,9 +128,14 @@ const attachColorImages = async (items: Cart_Item[]): Promise<Cart_Item[]> => {
         },
       },
     },
-    orderBy: {
-      id: "asc",
-    },
+    orderBy: [
+      {
+        is_featured: "desc",
+      },
+      {
+        id: "asc",
+      },
+    ],
   });
 
   const imageMap = new Map<string, (typeof images)[number]>();

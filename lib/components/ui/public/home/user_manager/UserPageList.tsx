@@ -324,7 +324,7 @@ export default function UserPageList() {
           <SelectTrigger className="md:w-[180px]">
             <SelectValue />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="bg-white">
             <SelectItem value="ALL">Tất cả role</SelectItem>
             <SelectItem value="USER">User</SelectItem>
             <SelectItem value="ADMIN">Admin</SelectItem>
@@ -341,7 +341,7 @@ export default function UserPageList() {
           <SelectTrigger className="md:w-[180px]">
             <SelectValue />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="bg-white">
             <SelectItem value="ALL">Tất cả trạng thái</SelectItem>
             <SelectItem value="ACTIVE">Active</SelectItem>
             <SelectItem value="BLOCKED">Blocked</SelectItem>
@@ -414,7 +414,7 @@ export default function UserPageList() {
                         <SelectTrigger className="w-[120px]">
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="bg-white">
                           <SelectItem value="USER">User</SelectItem>
                           <SelectItem value="ADMIN">Admin</SelectItem>
                         </SelectContent>
@@ -430,7 +430,7 @@ export default function UserPageList() {
                         <SelectTrigger className="w-[130px]">
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="bg-white">
                           <SelectItem value="ACTIVE">Active</SelectItem>
                           <SelectItem value="BLOCKED">Blocked</SelectItem>
                         </SelectContent>

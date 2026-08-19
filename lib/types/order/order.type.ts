@@ -7,6 +7,7 @@ export type CreateOrderItemInput = {
   price: number;
   quantity: number;
   total_price: number;
+  image_url: string;
 };
 
 export type CreateOrderInput = {

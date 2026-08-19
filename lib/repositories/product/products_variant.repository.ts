@@ -155,9 +155,18 @@ const attachColorImages = async (
         },
       },
     },
-    orderBy: {
-      id: "asc",
-    },
+    // orderBy: {
+    //   id: "asc",
+    // },
+
+    orderBy: [
+      {
+        is_featured: "desc",
+      },
+      {
+        id: "asc",
+      },
+    ],
   });
 
   const imageMap = new Map<string, (typeof images)[number]>();

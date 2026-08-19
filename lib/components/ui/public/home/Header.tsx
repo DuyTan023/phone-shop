@@ -285,7 +285,7 @@ export default function Header() {
 
           {/* Tra cứu đơn hàng */}
           <Link
-            href="/lookup"
+            href="/order"
             className="hidden md:flex items-center gap-1.5 text-white hover:bg-blue-700/60 px-2.5 py-1.5 rounded-xl transition text-xs font-semibold"
           >
             <Truck className="w-4 h-4 text-blue-200" />

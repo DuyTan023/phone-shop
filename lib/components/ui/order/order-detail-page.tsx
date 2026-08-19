@@ -14,6 +14,8 @@ import {
 } from "lucide-react";
 
 import type { ApiResponse } from "@/lib/types/public/types";
+import Image from "next/image";
+import type { CheckoutItem } from "../product_manager/ProductDetail";
 
 type OrderItem = {
   id: number;
@@ -25,6 +27,7 @@ type OrderItem = {
   price: number | string;
   quantity: number;
   total_price: number | string;
+  image_url: string;
 };
 
 type Order = {
@@ -161,7 +164,7 @@ export function OrderDetailPage({ orderId, userId }: OrderDetailPageProps) {
         setLoading(true);
         setError("");
 
-        const response = await fetch(`/api/orders/${orderId}`);
+        const response = await fetch(`/api/users/order/${orderId}`);
 
         const result: ApiResponse<Order> = await response.json();
 
@@ -196,31 +199,57 @@ export function OrderDetailPage({ orderId, userId }: OrderDetailPageProps) {
 
   const handleCancelOrder = async () => {
     if (!order) return;
-
     const confirmed = window.confirm("Bạn có chắc chắn muốn hủy đơn hàng này?");
-
     if (!confirmed) return;
-
     try {
       setIsCancelling(true);
-
-      const response = await fetch(`/api/orders/${order.id}`, {
+      const response = await fetch(`/api/users/order/${order.id}/cancel`, {
         method: "PATCH",
       });
-
       const result: ApiResponse<Order> = await response.json();
-
       if (!response.ok || !result.success || !result.data) {
         throw new Error(result.message || "Không thể hủy đơn hàng");
       }
-
       setOrder(result.data);
-
       alert("Hủy đơn hàng thành công");
     } catch (error) {
       alert(error instanceof Error ? error.message : "Không thể hủy đơn hàng");
     } finally {
       setIsCancelling(false);
+    }
+  };
+
+  const handleReorder = () => {
+    if (!order) return;
+
+    try {
+      if (order.order_items.length === 0) {
+        alert("Đơn hàng không có sản phẩm để mua lại");
+        return;
+      }
+
+      const checkoutItems: CheckoutItem[] = order.order_items.map((item) => ({
+        variant_id: item.variant_id,
+        product_name: item.product_name,
+        sku: item.sku,
+        variant_info: item.variant_info,
+        price: Number(item.price),
+        quantity: item.quantity,
+        total_price: Number(item.total_price),
+        image_url: item.image_url,
+      }));
+
+      console.log(
+        "Dữ liệu Mua lại chuẩn bị lưu vào sessionStorage:",
+        checkoutItems,
+      );
+
+      sessionStorage.setItem("checkout_items", JSON.stringify(checkoutItems));
+
+      window.location.href = "/checkout";
+    } catch (error) {
+      console.error("Lỗi khi thực hiện Mua lại:", error);
+      alert("Không thể tiến hành mua lại. Vui lòng thử lại!");
     }
   };
 
@@ -260,8 +289,9 @@ export function OrderDetailPage({ orderId, userId }: OrderDetailPageProps) {
   const paymentStatus = getPaymentStatus(order.payment_status);
 
   const canCancel =
-    order.status === "PENDING" &&
-    !(order.payment_method === "PAYOS" && order.payment_status === "PAID");
+    order.status === "PENDING" && order.payment_status !== "PAID";
+
+  const canReorder = order.status === "CANCELLED";
 
   return (
     <main className="min-h-screen bg-muted/30">
@@ -374,24 +404,46 @@ export function OrderDetailPage({ orderId, userId }: OrderDetailPageProps) {
                   {order.order_items.map((item, index) => (
                     <div key={item.id}>
                       <div className="flex items-start justify-between gap-4">
-                        <div className="min-w-0 flex-1">
-                          <h3 className="text-sm font-semibold">
-                            {item.product_name}
-                          </h3>
+                        {/* Ảnh + thông tin sản phẩm */}
+                        <div className="flex min-w-0 flex-1 items-start gap-3">
+                          {/* Image */}
+                          <div className="relative size-20 shrink-0 overflow-hidden rounded-lg border bg-white">
+                            {item.image_url ? (
+                              <Image
+                                src={item.image_url}
+                                alt={item.product_name}
+                                fill
+                                className="object-contain p-1"
+                                sizes="80px"
+                              />
+                            ) : (
+                              <div className="flex h-full w-full items-center justify-center">
+                                <Package className="size-7 text-muted-foreground" />
+                              </div>
+                            )}
+                          </div>
 
-                          <p className="mt-1 text-xs text-muted-foreground">
-                            {item.variant_info}
-                          </p>
+                          {/* Product info */}
+                          <div className="min-w-0">
+                            <h3 className="text-sm font-semibold">
+                              {item.product_name}
+                            </h3>
 
-                          <p className="mt-1 text-xs text-muted-foreground">
-                            SKU: {item.sku}
-                          </p>
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              {item.variant_info}
+                            </p>
 
-                          <p className="mt-2 text-xs text-muted-foreground">
-                            {formatPrice(item.price)} × {item.quantity}
-                          </p>
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              SKU: {item.sku}
+                            </p>
+
+                            <p className="mt-2 text-xs text-muted-foreground">
+                              {formatPrice(item.price)} × {item.quantity}
+                            </p>
+                          </div>
                         </div>
 
+                        {/* Tổng tiền item */}
                         <span className="shrink-0 text-sm font-semibold">
                           {formatPrice(item.total_price)}
                         </span>
@@ -511,6 +563,16 @@ export function OrderDetailPage({ orderId, userId }: OrderDetailPageProps) {
                     className="w-full rounded-xl border border-red-200 px-4 py-2.5 text-sm font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {isCancelling ? "Đang hủy đơn..." : "Hủy đơn hàng"}
+                  </button>
+                )}
+
+                {canReorder && (
+                  <button
+                    type="button"
+                    onClick={handleReorder}
+                    className="w-full rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700"
+                  >
+                    Mua lại
                   </button>
                 )}
               </CardContent>

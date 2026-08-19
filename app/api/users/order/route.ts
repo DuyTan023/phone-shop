@@ -84,3 +84,36 @@ export async function POST(request: Request) {
     );
   }
 }
+
+export async function GET() {
+  try {
+    const user = await requireApiAuth();
+
+    const orders = await orderService.getOrdersByUserId(user.id);
+
+    const serialized = JSON.parse(
+      JSON.stringify(orders, (_, value) =>
+        typeof value === "bigint" ? value.toString() : value,
+      ),
+    );
+
+    return NextResponse.json({
+      success: true,
+
+      data: serialized,
+    });
+  } catch (error) {
+    return NextResponse.json(
+      {
+        success: false,
+
+        message:
+          error instanceof Error
+            ? error.message
+            : "Không thể tải danh sách đơn hàng",
+      },
+
+      { status: 500 },
+    );
+  }
+}
