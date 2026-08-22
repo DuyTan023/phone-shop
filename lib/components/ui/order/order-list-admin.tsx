@@ -41,7 +41,6 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 
-// Shadcn Dialog components (Đảm bảo bạn đã cài đặt dialog component)
 import {
   Dialog,
   DialogContent,
@@ -102,9 +101,8 @@ export default function OrderAdminList() {
   const [modalEditingStatus, setModalEditingStatus] =
     useState<order_status>("PENDING");
 
-  // =====================================================
   // FETCH ORDERS
-  // =====================================================
+
   useEffect(() => {
     const controller = new AbortController();
 
@@ -181,9 +179,8 @@ export default function OrderAdminList() {
     setIsDialogOpen(true);
   };
 
-  // =====================================================
   // ACTIONS (UPDATE STATUS & CONFIRM COD)
-  // =====================================================
+
   const handleSaveStatus = async (orderId: number) => {
     try {
       setLoading(true);
@@ -272,7 +269,7 @@ export default function OrderAdminList() {
           className="md:w-[300px]"
         />
 
-        <Select
+        {/* <Select
           value={status}
           onValueChange={(value) => {
             setStatus(value as order_status | "ALL");
@@ -289,6 +286,36 @@ export default function OrderAdminList() {
             <SelectItem value="SHIPPING">Shipping</SelectItem>
             <SelectItem value="COMPLETED">Completed</SelectItem>
           </SelectContent>
+        </Select> */}
+
+        <Select
+          value={status}
+          onValueChange={(value) => {
+            setStatus(value as order_status | "ALL");
+            setPage(1);
+          }}
+        >
+          <SelectTrigger className="md:w-[180px] bg-white">
+            <SelectValue>
+              {status === "ALL"
+                ? "Tất cả trạng thái"
+                : status === "PENDING"
+                  ? "Pending"
+                  : status === "CONFIRMED"
+                    ? "Confirmed"
+                    : status === "SHIPPING"
+                      ? "Shipping"
+                      : "Completed"}
+            </SelectValue>
+          </SelectTrigger>
+
+          <SelectContent className="bg-white">
+            <SelectItem value="ALL">Tất cả trạng thái</SelectItem>
+            <SelectItem value="PENDING">Chờ xử lý</SelectItem>
+            <SelectItem value="CONFIRMED">Đã xác nhận</SelectItem>
+            <SelectItem value="SHIPPING">Đang giao</SelectItem>
+            <SelectItem value="COMPLETED">Hoàn thành</SelectItem>
+          </SelectContent>
         </Select>
 
         <Select
@@ -298,15 +325,26 @@ export default function OrderAdminList() {
             setPage(1);
           }}
         >
-          <SelectTrigger className="md:w-[180px]">
-            <SelectValue placeholder="Trạng thái thanh toán" />
+          <SelectTrigger className="md:w-[180px] bg-white">
+            <SelectValue>
+              {paymentStatus === "ALL"
+                ? "Tất cả thanh toán"
+                : paymentStatus === "UNPAID"
+                  ? "Chưa thanh toán"
+                  : paymentStatus === "PENDING"
+                    ? "Đang xử lý"
+                    : paymentStatus === "PAID"
+                      ? "Đã thanh toán"
+                      : "Đã hoàn tiền"}
+            </SelectValue>
           </SelectTrigger>
+
           <SelectContent className="bg-white">
             <SelectItem value="ALL">Tất cả thanh toán</SelectItem>
-            <SelectItem value="UNPAID">Unpaid</SelectItem>
-            <SelectItem value="PENDING">Pending</SelectItem>
-            <SelectItem value="PAID">Paid</SelectItem>
-            <SelectItem value="REFUNDED">Refunded</SelectItem>
+            <SelectItem value="UNPAID">Chưa thanh toán</SelectItem>
+            <SelectItem value="PENDING">Đang xử lý</SelectItem>
+            <SelectItem value="PAID">Đã thanh toán</SelectItem>
+            <SelectItem value="REFUNDED">Đã hoàn tiền</SelectItem>
           </SelectContent>
         </Select>
 
@@ -383,9 +421,23 @@ export default function OrderAdminList() {
                           {order.payment_method}
                         </span>
                         <span
-                          className={`text-xs font-medium ${order.payment_status === "PAID" ? "text-green-600" : "text-orange-600"}`}
+                          className={`text-xs font-medium ${
+                            order.payment_status === "PAID"
+                              ? "text-green-600"
+                              : order.payment_status === "PENDING"
+                                ? "text-yellow-600"
+                                : order.payment_status === "REFUNDED"
+                                  ? "text-purple-600"
+                                  : "text-orange-600"
+                          }`}
                         >
-                          {order.payment_status}
+                          {order.payment_status === "PAID"
+                            ? "Đã thanh toán"
+                            : order.payment_status === "PENDING"
+                              ? "Đang xử lý"
+                              : order.payment_status === "REFUNDED"
+                                ? "Đã hoàn tiền"
+                                : "Chưa thanh toán"}
                         </span>
                       </div>
                     </TableCell>

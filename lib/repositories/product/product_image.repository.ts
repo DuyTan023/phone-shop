@@ -2,14 +2,6 @@ import type { Prisma } from "@/app/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 
 export class ProductImageRepository {
-  // ==========================================
-  // 1. CÁC HÀM TRUY VẤN (READ)
-  // ==========================================
-
-  /**
-   * [ĐÃ SỬA] Lấy danh sách ảnh chung của Sản phẩm (variant_id = null)
-   * Đã bỏ condition gán cứng is_featured: true
-   */
   async getGeneralImages(productId: number) {
     return await prisma.product_images.findMany({
       where: {
@@ -20,10 +12,6 @@ export class ProductImageRepository {
     });
   }
 
-  /**
-   * [BỔ SUNG MỚI] Lấy riêng 1 tấm Ảnh Đại Diện (Featured Image) của sản phẩm.
-   * Ưu tiên ảnh có is_featured = true; nếu chưa có thì fallback lấy ảnh chung đầu tiên.
-   */
   async getFeaturedImage(productId: number) {
     const featured = await prisma.product_images.findFirst({
       where: {
@@ -44,9 +32,6 @@ export class ProductImageRepository {
     });
   }
 
-  /**
-   * Lấy danh sách ảnh phân nhóm theo MÀU SẮC DUY NHẤT của sản phẩm.
-   */
   async getImagesGroupedByColor(productId: number) {
     const variants = await prisma.product_variants.findMany({
       where: { product_id: productId },
@@ -104,9 +89,6 @@ export class ProductImageRepository {
     return Array.from(colorGroupMap.values());
   }
 
-  /**
-   * [BỔ SUNG CHO DROPDOWN UI] Lấy danh sách Nhóm Màu độc nhất của sản phẩm
-   */
   async getColorOptionsByProductId(productId: number) {
     const variants = await prisma.product_variants.findMany({
       where: { product_id: productId },
@@ -147,9 +129,6 @@ export class ProductImageRepository {
     return Array.from(uniqueColors.values());
   }
 
-  /**
-   * Lấy danh sách ảnh của 1 Biến thể cụ thể theo Cơ chế Truy vấn Liên vết.
-   */
   async getImagesByVariantId(variantId: number) {
     const currentVariant = await prisma.product_variants.findUnique({
       where: { id: variantId },
@@ -172,9 +151,6 @@ export class ProductImageRepository {
     });
   }
 
-  /**
-   * Lấy toàn bộ ảnh của sản phẩm
-   */
   async getAllImagesByProductId(productId: number) {
     return await prisma.product_images.findMany({
       where: { product_id: productId },
@@ -182,13 +158,6 @@ export class ProductImageRepository {
     });
   }
 
-  // ==========================================
-  // 2. CÁC HÀM THÊM MỚI (CREATE)
-  // ==========================================
-
-  /**
-   * Thêm 1 ảnh mới (Nhiều logic kiểm tra nếu is_featured = true thì reset các ảnh khác)
-   */
   async createImage(data: Prisma.product_imagesUncheckedCreateInput) {
     if (data.is_featured) {
       return await prisma.$transaction(async (tx) => {
@@ -206,22 +175,12 @@ export class ProductImageRepository {
     });
   }
 
-  /**
-   * Thêm nhiều ảnh cùng lúc (Upload hàng loạt)
-   */
   async createManyImages(data: Prisma.product_imagesUncheckedCreateInput[]) {
     return await prisma.product_images.createMany({
       data,
     });
   }
 
-  // ==========================================
-  // 3. CÁC HÀM CẬP NHẬT (UPDATE)
-  // ==========================================
-
-  /**
-   * Đặt 1 ảnh làm ảnh đại diện chính (is_featured = true) qua Nút Star
-   */
   async setFeaturedImage(productId: number, imageId: number) {
     return await prisma.$transaction([
       prisma.product_images.updateMany({
@@ -235,10 +194,6 @@ export class ProductImageRepository {
     ]);
   }
 
-  /**
-   * [ĐÃ SỬA] Cập nhật thông tin/đường dẫn của 1 ảnh
-   * Tự động hủy is_featured của toàn bộ các ảnh khác nếu ảnh này được tick is_featured = true
-   */
   async updateImage(
     id: number,
     data: Prisma.product_imagesUncheckedUpdateInput,
@@ -272,19 +227,12 @@ export class ProductImageRepository {
     });
   }
 
-  /**
-   * Chuyển quyền sở hữu ảnh từ Variant này sang Variant khác.
-   */
   async reassignVariantImages(fromVariantId: number, toVariantId: number) {
     return await prisma.product_images.updateMany({
       where: { variant_id: fromVariantId },
       data: { variant_id: toVariantId },
     });
   }
-
-  // ==========================================
-  // 4. CÁC HÀM XÓA (DELETE)
-  // ==========================================
 
   async deleteImage(id: number) {
     return await prisma.product_images.delete({

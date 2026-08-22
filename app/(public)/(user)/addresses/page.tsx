@@ -57,10 +57,6 @@ export default function AddressesPage() {
 
   const [showForm, setShowForm] = useState(false);
 
-  // =========================
-  // GET ADDRESSES
-  // =========================
-
   const fetchAddresses = async () => {
     try {
       setLoading(true);
@@ -81,10 +77,6 @@ export default function AddressesPage() {
     }
   };
 
-  // =========================
-  // GET PROVINCES
-  // =========================
-
   const fetchProvinces = async () => {
     try {
       const response = await fetch("/api/users/addresses/province");
@@ -100,10 +92,6 @@ export default function AddressesPage() {
       console.error("Lỗi lấy danh sách tỉnh/thành:", error);
     }
   };
-
-  // =========================
-  // GET COMMUNES
-  // =========================
 
   const fetchCommunes = async (provinceId: number) => {
     try {
@@ -127,10 +115,6 @@ export default function AddressesPage() {
       setLoadingCommunes(false);
     }
   };
-
-  // =========================
-  // INITIAL LOAD
-  // =========================
 
   useEffect(() => {
     let isMounted = true;
@@ -156,10 +140,6 @@ export default function AddressesPage() {
     };
   }, []);
 
-  // =========================
-  // PROVINCE CHANGE
-  // =========================
-
   const handleProvinceChange = (province: provinces | null) => {
     setForm((prev) => ({
       ...prev,
@@ -174,20 +154,12 @@ export default function AddressesPage() {
     }
   };
 
-  // =========================
-  // OPEN CREATE
-  // =========================
-
   const handleCreate = () => {
     setEditingId(null);
     setForm(initialForm);
     setCommunesList([]);
     setShowForm(true);
   };
-
-  // =========================
-  // OPEN EDIT
-  // =========================
 
   const handleEdit = async (address: user_addresses) => {
     setEditingId(address.id);
@@ -206,10 +178,6 @@ export default function AddressesPage() {
 
     await fetchCommunes(address.province_id);
   };
-
-  // =========================
-  // SUBMIT
-  // =========================
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -266,10 +234,6 @@ export default function AddressesPage() {
     }
   };
 
-  // =========================
-  // DELETE
-  // =========================
-
   const handleDelete = async (id: number) => {
     const confirmed = window.confirm("Bạn có chắc muốn xóa địa chỉ này không?");
 
@@ -297,19 +261,11 @@ export default function AddressesPage() {
     }
   };
 
-  // =========================
-  // SELECTED OBJECTS
-  // =========================
-
   const selectedProvince =
     provincesList.find((province) => province.id === form.province_id) ?? null;
 
   const selectedCommune =
     communesList.find((commune) => commune.id === form.commune_id) ?? null;
-
-  // =========================
-  // RENDER
-  // =========================
 
   return (
     <div className="mx-auto max-w-4xl space-y-6 p-6">

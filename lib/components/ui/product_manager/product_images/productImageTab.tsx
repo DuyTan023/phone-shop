@@ -49,7 +49,7 @@ interface ProductImagesTabProps {
 }
 
 export default function ProductImagesTab({ productId }: ProductImagesTabProps) {
-  // 1. Quản lý State Dữ liệu
+  // Quản lý State Dữ liệu
   const [generalImages, setGeneralImages] = useState<product_images[]>([]);
   const [featuredImages, setFeaturedImages] = useState<product_images | null>(
     null,
@@ -76,7 +76,7 @@ export default function ProductImagesTab({ productId }: ProductImagesTabProps) {
   );
 
   // -------------------------------------------------------------
-  // 2. Các hàm Fetch dữ liệu API
+  // Các hàm Fetch dữ liệu API
   // -------------------------------------------------------------
 
   // Tải danh sách ảnh chung (variant_id IS NULL hoặc type=general)

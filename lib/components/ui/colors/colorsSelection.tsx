@@ -17,7 +17,7 @@ import { CreateColorDialog } from "./CreateColorDialog";
 import { DeleteColorDialog } from "./DeleteColorDialog";
 import { UpdateColorDialog } from "./UpdateColorDialog";
 
-// ===== Styles =====
+// Styles
 const cardWrap =
   "flex flex-col rounded-lg border border-slate-100 overflow-hidden";
 const tableScroll = "overflow-x-auto";

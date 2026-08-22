@@ -86,7 +86,7 @@ export default function TabProductVariantInfo({
   const selectedRam = rams?.find((s) => s?.id === ramId) ?? null;
   const selectedStorage = storages?.find((s) => s?.id === storageId) ?? null;
 
-  // 1. Fetch danh sách biến thể có Phân trang & Filter
+  // Fetch danh sách biến thể có Phân trang & Filter
   const fetchProductVariant = useCallback(async () => {
     try {
       const params = new URLSearchParams();

@@ -88,7 +88,7 @@ export function DeleteProductDialog({
 
   return (
     <>
-      {/* 1. Trigger Button thuần */}
+      {/* Trigger Button thuần */}
       {showTrigger && (
         <button
           type="button"
@@ -100,7 +100,7 @@ export function DeleteProductDialog({
         </button>
       )}
 
-      {/* 2. Modal Overlay + Content */}
+      {/* Modal Overlay + Content */}
       {isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           {/* Backdrop (Nền mờ) */}

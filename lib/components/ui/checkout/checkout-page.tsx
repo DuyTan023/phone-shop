@@ -73,10 +73,7 @@ export function CheckoutPage({ initialUser }: CheckoutPageProps) {
   // Loading khi đang tạo đơn hàng / thanh toán
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
 
-  // =========================
   // LOAD CHECKOUT DATA
-  // =========================
-
   useEffect(() => {
     let isMounted = true;
 
@@ -136,9 +133,7 @@ export function CheckoutPage({ initialUser }: CheckoutPageProps) {
     };
   }, []);
 
-  // =========================
   // LOAD COMMUNES
-  // =========================
 
   useEffect(() => {
     if (!selectedAddressId || addresses.length === 0) {
@@ -172,9 +167,7 @@ export function CheckoutPage({ initialUser }: CheckoutPageProps) {
     loadCommunes();
   }, [selectedAddressId, addresses]);
 
-  // =========================
   // ADD ADDRESS
-  // =========================
 
   const handleAddAddress = async (newAddressData: AddressForm) => {
     try {
@@ -216,9 +209,7 @@ export function CheckoutPage({ initialUser }: CheckoutPageProps) {
     }
   };
 
-  // =========================
   // CALCULATE PRICE
-  // =========================
 
   const subtotal = useMemo(() => {
     return checkoutItems.reduce((sum, item) => sum + item.total_price, 0);
@@ -228,9 +219,7 @@ export function CheckoutPage({ initialUser }: CheckoutPageProps) {
 
   const totalAmount = subtotal + shippingFee;
 
-  // =========================
   // CREATE ORDER
-  // =========================
 
   const handlePlaceOrder = async () => {
     // Chống click nhiều lần
@@ -282,9 +271,7 @@ export function CheckoutPage({ initialUser }: CheckoutPageProps) {
     try {
       setIsPlacingOrder(true);
 
-      // =========================
-      // 1. CREATE ORDER
-      // =========================
+      // CREATE ORDER
 
       const orderPayload = {
         recipient_name: selectedAddress.recipient_name,
@@ -321,9 +308,7 @@ export function CheckoutPage({ initialUser }: CheckoutPageProps) {
 
       console.log("Tạo Order thành công:", order);
 
-      // =========================
-      // 2. COD
-      // =========================
+      // COD
 
       if (paymentMethod === "COD") {
         sessionStorage.removeItem("checkout_items");
@@ -333,9 +318,7 @@ export function CheckoutPage({ initialUser }: CheckoutPageProps) {
         return;
       }
 
-      // =========================
-      // 3. PAYOS
-      // =========================
+      // PAYOS
 
       const paymentResponse = await fetch(
         `/api/users/order/${order.id}/payment`,
@@ -367,9 +350,7 @@ export function CheckoutPage({ initialUser }: CheckoutPageProps) {
     }
   };
 
-  // =========================
   // LOADING PAGE
-  // =========================
 
   if (loading) {
     return (
@@ -379,9 +360,7 @@ export function CheckoutPage({ initialUser }: CheckoutPageProps) {
     );
   }
 
-  // =========================
   // RENDER
-  // =========================
 
   return (
     <main className="min-h-screen bg-muted/30">
@@ -399,10 +378,10 @@ export function CheckoutPage({ initialUser }: CheckoutPageProps) {
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
           {/* LEFT */}
           <div className="space-y-6">
-            {/* 1. Customer */}
+            {/* Customer */}
             <CustomerInfo user={initialUser} />
 
-            {/* 2. Address */}
+            {/* Address */}
             <AddressSection
               addresses={addresses}
               provincesList={provincesList}
@@ -412,7 +391,7 @@ export function CheckoutPage({ initialUser }: CheckoutPageProps) {
               onAddAddress={handleAddAddress}
             />
 
-            {/* 3. Products */}
+            {/* Products */}
             <OrderItems
               items={checkoutItems.map((item, index) => ({
                 ...item,
@@ -420,10 +399,10 @@ export function CheckoutPage({ initialUser }: CheckoutPageProps) {
               }))}
             />
 
-            {/* 4. Payment method */}
+            {/* Payment method */}
             <PaymentMethod value={paymentMethod} onChange={setPaymentMethod} />
 
-            {/* 5. Note */}
+            {/* Note */}
             <section className="rounded-xl border bg-background p-5">
               <div className="mb-4">
                 <h2 className="font-semibold">Ghi chú đơn hàng</h2>

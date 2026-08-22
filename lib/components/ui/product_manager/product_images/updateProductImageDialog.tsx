@@ -42,6 +42,7 @@ export function UpdateProductImageDialog({
   // Điền dữ liệu cũ vào Form khi Dialog mở ra hoặc image thay đổi
   useEffect(() => {
     if (open && image) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setImageUrl(image.image_url || "");
       setIsFeatured(Boolean(image.is_featured));
       setErrorMessage(null);

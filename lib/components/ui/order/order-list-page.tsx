@@ -165,9 +165,7 @@ export function OrderListPage() {
 
   const [selectedFilter, setSelectedFilter] = useState<OrderFilter>("PENDING");
 
-  // =========================
   // LOAD ORDERS
-  // =========================
 
   useEffect(() => {
     let isMounted = true;
@@ -210,9 +208,7 @@ export function OrderListPage() {
     };
   }, []);
 
-  // =========================
   // FILTER ORDERS
-  // =========================
 
   const filteredOrders = useMemo(() => {
     if (selectedFilter === "ALL") {
@@ -233,9 +229,7 @@ export function OrderListPage() {
     };
   }, [orders]);
 
-  // =========================
   // LOADING
-  // =========================
 
   if (loading) {
     return (
@@ -249,9 +243,7 @@ export function OrderListPage() {
     );
   }
 
-  // =========================
   // ERROR
-  // =========================
 
   if (error) {
     return (
@@ -271,9 +263,7 @@ export function OrderListPage() {
     );
   }
 
-  // =========================
   // RENDER
-  // =========================
 
   return (
     <main className="min-h-screen bg-muted/30">

@@ -44,7 +44,6 @@ interface NavSection {
   items: NavItem[];
 }
 
-// ─── Sidebar nav items ───────────────────────────────────────────────
 const navMain: NavSection[] = [
   {
     label: "Tổng quan",
@@ -133,7 +132,6 @@ const navMain: NavSection[] = [
   },
 ];
 
-// ─── Mock data ────────────────────────────────────────────────────────
 const statsCards = [
   {
     title: "Doanh thu tháng",
@@ -277,7 +275,6 @@ const statusConfig: Record<string, { label: string; class: string }> = {
   },
 };
 
-// ─── Mini sparkline component ─────────────────────────────────────────
 function Sparkline({ data, up }: { data: number[]; up: boolean }) {
   const max = Math.max(...data);
   const min = Math.min(...data);
@@ -303,7 +300,6 @@ function Sparkline({ data, up }: { data: number[]; up: boolean }) {
   );
 }
 
-// ─── Revenue bar chart (pure SVG) ────────────────────────────────────
 const monthlyRevenue = [
   { month: "T1", val: 420 },
   { month: "T2", val: 580 },

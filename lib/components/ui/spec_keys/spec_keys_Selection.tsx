@@ -41,14 +41,11 @@ export function SpecKeysSection() {
   const [isLoading, setIsLoading] = useState(false);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
 
-  // 1. Quản lý từ khóa tìm kiếm
   const [keyword, setKeyword] = useState("");
 
-  // 2. Token để kích hoạt refetch sau khi Tạo / Sửa / Xóa thành công
   const [refreshToken, setRefreshToken] = useState(0);
   const refetch = () => setRefreshToken((prev) => prev + 1);
 
-  // 3. Effect đảm nhận Fetching, Debounce 400ms và Tránh Race Condition
   useEffect(() => {
     let ignore = false;
 

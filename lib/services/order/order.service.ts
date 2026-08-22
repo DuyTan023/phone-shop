@@ -3,6 +3,7 @@ import {
   type OrderStatus,
 } from "@/lib/repositories/order/order.repository";
 import { orderItemRepository } from "@/lib/repositories/order/order_item.repository";
+import { orderRequestRepository } from "@/lib/repositories/order/order_request.repository";
 import { payOSService } from "@/lib/services/payment/payos.service";
 
 import type {
@@ -52,6 +53,13 @@ export const orderService = {
         order_id: order.id,
       });
     }
+
+    // Tạo request xác nhận đơn
+    await orderRequestRepository.create({
+      order_id: order.id,
+      user_id: orderData.user_id,
+      type: "CREATE_ORDER",
+    });
 
     return orderRepository.findById(order.id);
   },

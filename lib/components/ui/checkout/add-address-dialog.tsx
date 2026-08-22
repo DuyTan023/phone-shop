@@ -68,9 +68,8 @@ export function AddAddressDialog({
     is_default: false,
   });
 
-  // =========================
   // GET PROVINCES
-  // =========================
+
   const fetchProvinces = async () => {
     try {
       setLoadingProvinces(true);
@@ -89,9 +88,8 @@ export function AddAddressDialog({
     }
   };
 
-  // =========================
   // GET COMMUNES
-  // =========================
+
   const fetchCommunes = async (provinceId: number) => {
     try {
       setLoadingCommunes(true);
@@ -114,9 +112,8 @@ export function AddAddressDialog({
     }
   };
 
-  // =========================
   // HANDLE DIALOG OPEN CHANGE
-  // =========================
+
   const handleOpenChange = (isOpen: boolean) => {
     setOpen(isOpen);
     if (isOpen && provincesList.length === 0) {
@@ -124,9 +121,8 @@ export function AddAddressDialog({
     }
   };
 
-  // =========================
   // PROVINCE & COMMUNE CHANGE
-  // =========================
+
   const handleProvinceChange = (province: provinces | null) => {
     setForm((current) => ({
       ...current,

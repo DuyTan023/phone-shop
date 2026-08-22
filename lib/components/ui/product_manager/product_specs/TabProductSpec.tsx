@@ -41,9 +41,6 @@ import {
 } from "lucide-react";
 import React, { useEffect, useState } from "react";
 
-// ==========================================
-// TYPES
-// ==========================================
 export interface SpecGroup {
   id: number;
   name: string;
@@ -86,9 +83,6 @@ interface CreateSpecKeyDialogProps {
   preselectedGroupId?: number | null;
 }
 
-// ==========================================
-// HELPER FETCHING
-// ==========================================
 const fetchData = async <T,>(
   url: string,
   errorMessage: string,
@@ -118,9 +112,6 @@ const fetchData = async <T,>(
   }
 };
 
-// ==========================================
-// CREATE SPEC KEY DIALOG FORM & WRAPPER
-// ==========================================
 function CreateSpecKeyForm({
   onClose,
   onSuccess,
@@ -389,9 +380,6 @@ export function CreateSpecKeyDialog({
   );
 }
 
-// ==========================================
-// MAIN COMPONENT
-// ==========================================
 export default function ProductSpecsTab({
   productId,
   initialSpecs = [],

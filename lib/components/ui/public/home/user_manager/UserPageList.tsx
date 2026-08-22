@@ -63,10 +63,6 @@ type EditingUser = {
 // };
 
 export default function UserPageList() {
-  // =====================================================
-  // STATE
-  // =====================================================
-
   const [users, setUsers] = useState<users[]>([]);
 
   // keyword dùng để lưu giá trị ô Input
@@ -91,10 +87,6 @@ export default function UserPageList() {
   const [editingUsers, setEditingUsers] = useState<Record<number, EditingUser>>(
     {},
   );
-
-  // =====================================================
-  // FETCH USERS (Single Source of Truth)
-  // =====================================================
 
   useEffect(() => {
     const controller = new AbortController();
@@ -163,10 +155,6 @@ export default function UserPageList() {
     };
   }, [page, role, status, searchKeyword, limit]);
 
-  // =====================================================
-  // SEARCH & RESET
-  // =====================================================
-
   const handleSearch = () => {
     setSearchKeyword(keyword.trim());
     setPage(1);
@@ -179,10 +167,6 @@ export default function UserPageList() {
     setStatus("ALL");
     setPage(1);
   };
-
-  // =====================================================
-  // EDIT HANDLERS
-  // =====================================================
 
   const handleRoleChange = (user: users, newRole: user_role) => {
     setEditingUsers((prev) => ({
@@ -293,10 +277,6 @@ export default function UserPageList() {
       setLoading(false);
     }
   };
-
-  // =====================================================
-  // UI
-  // =====================================================
 
   return (
     <div className="space-y-6">

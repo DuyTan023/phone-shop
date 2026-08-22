@@ -197,23 +197,65 @@ export function OrderDetailPage({ orderId, userId }: OrderDetailPageProps) {
     };
   }, [orderId]);
 
+  // const handleCancelOrder = async () => {
+  //   if (!order) return;
+  //   const confirmed = window.confirm("Bạn có chắc chắn muốn hủy đơn hàng này?");
+  //   if (!confirmed) return;
+  //   try {
+  //     setIsCancelling(true);
+  //     const response = await fetch(`/api/users/order/${order.id}/cancel`, {
+  //       method: "PATCH",
+  //     });
+  //     const result: ApiResponse<Order> = await response.json();
+  //     if (!response.ok || !result.success || !result.data) {
+  //       throw new Error(result.message || "Không thể hủy đơn hàng");
+  //     }
+  //     setOrder(result.data);
+  //     alert("Hủy đơn hàng thành công");
+  //   } catch (error) {
+  //     alert(error instanceof Error ? error.message : "Không thể hủy đơn hàng");
+  //   } finally {
+  //     setIsCancelling(false);
+  //   }
+  // };
+
   const handleCancelOrder = async () => {
     if (!order) return;
-    const confirmed = window.confirm("Bạn có chắc chắn muốn hủy đơn hàng này?");
+
+    const confirmed = window.confirm(
+      "Bạn có chắc chắn muốn gửi yêu cầu hủy đơn hàng này?",
+    );
+
     if (!confirmed) return;
+
     try {
       setIsCancelling(true);
-      const response = await fetch(`/api/users/order/${order.id}/cancel`, {
-        method: "PATCH",
+
+      const response = await fetch("/api/users/order/request", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          order_id: order.id,
+          type: "CANCEL_ORDER",
+          reason: "Người dùng yêu cầu hủy đơn hàng",
+        }),
       });
-      const result: ApiResponse<Order> = await response.json();
-      if (!response.ok || !result.success || !result.data) {
-        throw new Error(result.message || "Không thể hủy đơn hàng");
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || "Không thể gửi yêu cầu hủy đơn hàng");
       }
-      setOrder(result.data);
-      alert("Hủy đơn hàng thành công");
+
+      alert("Đã gửi yêu cầu hủy đơn hàng. Vui lòng chờ admin xác nhận.");
     } catch (error) {
-      alert(error instanceof Error ? error.message : "Không thể hủy đơn hàng");
+      alert(
+        error instanceof Error
+          ? error.message
+          : "Không thể gửi yêu cầu hủy đơn hàng",
+      );
     } finally {
       setIsCancelling(false);
     }

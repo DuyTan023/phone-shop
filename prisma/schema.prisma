@@ -133,17 +133,18 @@ model units {
 }
 
 model users {
-  id             Int             @id @default(autoincrement())
-  clerk_id       String          @unique @db.VarChar(255)
-  email          String          @unique @db.VarChar(255)
-  full_name      String?         @db.VarChar(255)
-  phone          String?         @unique @db.VarChar(20)
+  id             Int              @id @default(autoincrement())
+  clerk_id       String           @unique @db.VarChar(255)
+  email          String           @unique @db.VarChar(255)
+  full_name      String?          @db.VarChar(255)
+  phone          String?          @unique @db.VarChar(20)
   avatar_url     String?
-  role           user_role       @default(USER)
-  status         user_status     @default(ACTIVE)
-  created_at     DateTime        @default(now()) @db.Timestamp(6)
-  updated_at     DateTime        @default(now()) @db.Timestamp(6)
+  role           user_role        @default(USER)
+  status         user_status      @default(ACTIVE)
+  created_at     DateTime         @default(now()) @db.Timestamp(6)
+  updated_at     DateTime         @default(now()) @db.Timestamp(6)
   carts          carts?
+  order_requests order_requests[]
   orders         orders[]
   user_addresses user_addresses?
 }
@@ -239,30 +240,49 @@ model order_items {
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model orders {
-  id                 Int            @id @default(autoincrement())
+  id                 Int              @id @default(autoincrement())
   user_id            Int
-  recipient_name     String         @db.VarChar(255)
-  recipient_phone    String         @db.VarChar(20)
+  recipient_name     String           @db.VarChar(255)
+  recipient_phone    String           @db.VarChar(20)
   shipping_address   String
   note               String?
-  subtotal           Decimal        @default(0) @db.Decimal(12, 2)
-  shipping_fee       Decimal        @default(0) @db.Decimal(12, 2)
-  total_amount       Decimal        @default(0) @db.Decimal(12, 2)
-  status             order_status   @default(PENDING)
-  payment_method     payment_method @default(COD)
-  payment_status     payment_status @default(UNPAID)
-  payment_order_code BigInt?        @unique
-  payment_link_id    String?        @unique @db.VarChar(100)
-  payment_reference  String?        @db.VarChar(100)
-  paid_at            DateTime?      @db.Timestamp(6)
-  created_at         DateTime       @default(now()) @db.Timestamp(6)
-  updated_at         DateTime       @default(now()) @db.Timestamp(6)
+  subtotal           Decimal          @default(0) @db.Decimal(12, 2)
+  shipping_fee       Decimal          @default(0) @db.Decimal(12, 2)
+  total_amount       Decimal          @default(0) @db.Decimal(12, 2)
+  status             order_status     @default(PENDING)
+  payment_method     payment_method   @default(COD)
+  payment_status     payment_status   @default(UNPAID)
+  payment_order_code BigInt?          @unique
+  payment_link_id    String?          @unique @db.VarChar(100)
+  payment_reference  String?          @db.VarChar(100)
+  paid_at            DateTime?        @db.Timestamp(6)
+  created_at         DateTime         @default(now()) @db.Timestamp(6)
+  updated_at         DateTime         @default(now()) @db.Timestamp(6)
   order_items        order_items[]
-  users              users          @relation(fields: [user_id], references: [id], onUpdate: NoAction, map: "fk_orders_user")
+  order_requests     order_requests[]
+  users              users            @relation(fields: [user_id], references: [id], onUpdate: NoAction, map: "fk_orders_user")
 
   @@index([payment_status], map: "idx_orders_payment_status")
   @@index([status], map: "idx_orders_status")
   @@index([user_id], map: "idx_orders_user_id")
+}
+
+model order_requests {
+  id         Int                  @id @default(autoincrement())
+  order_id   Int
+  user_id    Int
+  type       order_request_type
+  status     order_request_status @default(PENDING)
+  reason     String?              @db.VarChar(500)
+  admin_note String?              @db.VarChar(500)
+  created_at DateTime             @default(now()) @db.Timestamp(6)
+  updated_at DateTime             @default(now()) @db.Timestamp(6)
+  orders     orders               @relation(fields: [order_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_order_requests_order")
+  users      users                @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_order_requests_user")
+
+  @@index([order_id], map: "idx_order_requests_order_id")
+  @@index([status], map: "idx_order_requests_status")
+  @@index([user_id], map: "idx_order_requests_user_id")
 }
 
 enum user_role {
@@ -299,4 +319,15 @@ enum payment_status {
   PENDING
   PAID
   REFUNDED
+}
+
+enum order_request_status {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum order_request_type {
+  CREATE_ORDER
+  CANCEL_ORDER
 }

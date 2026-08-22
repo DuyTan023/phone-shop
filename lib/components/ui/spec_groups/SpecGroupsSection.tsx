@@ -52,7 +52,6 @@ export default function SpecGroupsSection() {
     }
   };
 
-  // CÁCH 2: Tách logic khởi tạo vào hàm async nội bộ kèm cờ isMounted
   useEffect(() => {
     let isMounted = true;
 

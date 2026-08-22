@@ -18,7 +18,6 @@ import { CreateSeriesDialog } from "./CreateSeriesDialog";
 import { DeleteSerieDialog } from "./DeleteSeriesDialog";
 import { UpdateSerieDialog } from "./UpdateSeriesDialog";
 
-// ===== Type Definition =====
 export type SerieWithBrand = {
   id: number;
   brand_id: number;
@@ -34,7 +33,6 @@ export type SerieWithBrand = {
   };
 };
 
-// ===== Styles =====
 const cardWrap =
   "flex flex-col rounded-lg border border-slate-100 overflow-hidden";
 const tableScroll = "overflow-x-auto";
@@ -55,14 +53,13 @@ export function SeriesSection() {
   const [isLoading, setIsLoading] = useState(false);
   const [searchKeyword, setSearchKeyword] = useState("");
 
-  // ===== Dialog States =====
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingSerie, setEditingSerie] = useState<SerieWithBrand | null>(null);
   const [deletingSerie, setDeletingSerie] = useState<SerieWithBrand | null>(
     null,
   );
 
-  // 1. Dùng useCallback để bọc hàm fetch API (dùng cho onSuccess của các Dialog)
+  // Dùng useCallback để bọc hàm fetch API (dùng cho onSuccess của các Dialog)
   const fetchSeries = useCallback(async () => {
     try {
       setIsLoading(true);
@@ -91,7 +88,7 @@ export function SeriesSection() {
     }
   }, [page, searchKeyword]);
 
-  // 2. Một Effect duy nhất xử lý cả Debounce & Fetch Data (Giống hệt BrandsSection)
+  // Một Effect duy nhất xử lý cả Debounce & Fetch Data (Giống hệt BrandsSection)
   useEffect(() => {
     const timer = setTimeout(() => {
       fetchSeries();

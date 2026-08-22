@@ -26,10 +26,6 @@ export function UpdateProductDialog({
   onClose,
   onSuccess,
 }: UpdateProductDialogProps) {
-  // -------------------------------------------------------------
-  // BƯỚC 1: KHAI BÁO TẤT CẢ CÁC HOOK Ở TOP-LEVEL
-  // -------------------------------------------------------------
-
   // State theo dõi product_id cũ để sync data ngay trong Render Pass
   const [prevProductId, setPrevProductId] = useState<number | null>(null);
 
@@ -91,14 +87,8 @@ export function UpdateProductDialog({
     fetchSeries();
   }, [isOpen]);
 
-  // -------------------------------------------------------------
-  // BƯỚC 2: RETURN ĐIỀU KIỆN (BẮT BUỘC ĐẶT NẰM DƯỚI CÁC HOOK)
-  // -------------------------------------------------------------
   if (!isOpen || !product) return null;
 
-  // -------------------------------------------------------------
-  // BƯỚC 3: XỬ LÝ EVENT & RENDER JSX
-  // -------------------------------------------------------------
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setName(value);

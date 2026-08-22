@@ -35,15 +35,7 @@ type ClerkWebhookEvent = {
 
 export async function POST(req: Request) {
   try {
-    // ========================================
-    // 1. Lấy raw body
-    // ========================================
-
     const payload = await req.text();
-
-    // ========================================
-    // 2. Lấy Svix headers
-    // ========================================
 
     const headerPayload = await headers();
 
@@ -57,10 +49,6 @@ export async function POST(req: Request) {
       });
     }
 
-    // ========================================
-    // 3. Lấy Webhook Secret
-    // ========================================
-
     const webhookSecret = process.env.CLERK_WEBHOOK_SECRET;
 
     if (!webhookSecret) {
@@ -71,10 +59,6 @@ export async function POST(req: Request) {
       });
     }
 
-    // ========================================
-    // 4. Verify Webhook
-    // ========================================
-
     const wh = new Webhook(webhookSecret);
 
     const event = wh.verify(payload, {
@@ -83,21 +67,9 @@ export async function POST(req: Request) {
       "svix-signature": svixSignature,
     }) as ClerkWebhookEvent;
 
-    // ========================================
-    // 5. Lấy event type
-    // ========================================
-
     const { type, data } = event;
 
-    // ========================================
-    // 6. Xử lý event
-    // ========================================
-
     switch (type) {
-      // ======================================
-      // USER CREATED
-      // ======================================
-
       case "user.created": {
         const primaryEmail = data.email_addresses.find(
           (item) => item.id === data.primary_email_address_id,
@@ -141,10 +113,6 @@ export async function POST(req: Request) {
         break;
       }
 
-      // ======================================
-      // USER UPDATED
-      // ======================================
-
       case "user.updated": {
         const user = await userService.getUserByClerkId(data.id);
 
@@ -164,10 +132,6 @@ export async function POST(req: Request) {
         break;
       }
 
-      // ======================================
-      // USER DELETED
-      // ======================================
-
       case "user.deleted": {
         const user = await userService.getUserByClerkId(data.id);
 
@@ -176,17 +140,9 @@ export async function POST(req: Request) {
         break;
       }
 
-      // ======================================
-      // EVENT KHÁC
-      // ======================================
-
       default:
         break;
     }
-
-    // ========================================
-    // 7. Trả response thành công
-    // ========================================
 
     return new Response("Webhook processed", {
       status: 200,

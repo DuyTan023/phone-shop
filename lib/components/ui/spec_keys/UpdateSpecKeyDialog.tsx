@@ -43,7 +43,7 @@ type SpecKeyWithGroup = Prisma.spec_keysGetPayload<{
 interface UpdateSpecKeyDialogProps {
   specKey: SpecKeyWithGroup;
   onSuccess: () => void;
-  // Các props dưới đây là tùy chọn nếu bạn muốn điều khiển open/close từ bên ngoài
+
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
 }

@@ -16,8 +16,6 @@ import { UnitsSection } from "@/lib/components/ui/units/unitsSelection";
 import { Pencil, Plus, Search, Trash2 } from "lucide-react";
 import { useState } from "react";
 
-// ─── Types ───────────────────────────────────────────────────────────────────
-
 type Section =
   | "overview"
   | "brands"
@@ -27,10 +25,6 @@ type Section =
   | "spec_groups"
   | "spec_keys"
   | "units";
-
-// ─── Sidebar nav items ────────────────────────────────────────────────────────
-
-// ─── Sub-components ───────────────────────────────────────────────────────────
 
 export function SectionHeader({
   title,
@@ -103,8 +97,6 @@ export function ActionButtons() {
   );
 }
 
-// ─── Tabs ─────────────────────────────────────────────────────────────────────
-
 function CatalogTabs({
   activeSection,
   setActiveSection,
@@ -143,8 +135,6 @@ function CatalogTabs({
     </div>
   );
 }
-
-// ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function CatalogDashboardPage() {
   const [activeSection, setActiveSection] = useState<Section>("overview");

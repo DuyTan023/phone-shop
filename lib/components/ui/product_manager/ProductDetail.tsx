@@ -74,9 +74,6 @@ export default function ProductDetail({
   const [colorImages, setColorImages] = useState<any[]>([]);
   const [loadingColorImages, setLoadingColorImages] = useState(false);
 
-  /* =========================================================
-      1. FETCH ẢNH CHUNG (TYPE = GENERAL)
-  ========================================================= */
   const getVariantImage = (variant: ProductVariant): string => {
     if (
       variant.product_images &&
@@ -133,9 +130,6 @@ export default function ProductDetail({
     }
   }, [product.id]);
 
-  /* =========================================================
-      2. FETCH ẢNH THEO MÀU (VARIANT_ID)
-  ========================================================= */
   const fetchImagesByVariantId = useCallback(
     async (variantId: number) => {
       if (!variantId) {
@@ -164,9 +158,6 @@ export default function ProductDetail({
     [product.id],
   );
 
-  /* =========================================================
-      3. FETCH SẢN PHẨM GỢI Ý CÙNG BRAND
-  ========================================================= */
   const fetchRelatedProductsByBrand = useCallback(
     async (brand_id: number) => {
       try {
@@ -188,9 +179,6 @@ export default function ProductDetail({
     [product.id],
   );
 
-  /* =========================================================
-      INITIAL DATA
-  ========================================================= */
   useEffect(() => {
     async function fetchProductData() {
       try {
@@ -258,9 +246,6 @@ export default function ProductDetail({
     fetchRelatedProductsByBrand,
   ]);
 
-  /* =========================================================
-      OPTIONS & GỘP ẢNH HIỂN THỊ
-  ========================================================= */
   const colors = useMemo(() => {
     return Array.from(
       new Map(
@@ -317,9 +302,6 @@ export default function ProductDetail({
     return generalUrls;
   }, [colorImages, generalImages]);
 
-  /* =========================================================
-      HANDLERS THAY ĐỔI
-  ========================================================= */
   const handleColorChange = (color: string) => {
     setSelectedColor(color);
     setSelectedImage(0);

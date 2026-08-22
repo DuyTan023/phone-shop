@@ -10,6 +10,7 @@ import {
   useUser,
 } from "@clerk/nextjs";
 import {
+  Bell,
   Loader2,
   LogOut,
   MapPin,
@@ -58,6 +59,8 @@ export default function Header() {
 
   const [cartItemCount, setCartItemCount] = useState(0);
 
+  const [pendingRequestCount, setPendingRequestCount] = useState(0);
+
   const fetchCartItemCount = async () => {
     try {
       const res = await fetch("/api/users/cart/items", {
@@ -74,6 +77,28 @@ export default function Header() {
       }
     } catch (error) {
       console.error("Lỗi lấy số lượng giỏ hàng:", error);
+    }
+  };
+
+  const fetchPendingRequestCount = async () => {
+    try {
+      const res = await fetch("/api/users/order/request", {
+        cache: "no-store",
+      });
+
+      const json = await res.json();
+
+      if (res.ok && json.success) {
+        const requests = json.data || [];
+
+        const pendingCount = requests.filter(
+          (item: { status: string }) => item.status === "PENDING",
+        ).length;
+
+        setPendingRequestCount(pendingCount);
+      }
+    } catch (error) {
+      console.error("Lỗi lấy số lượng yêu cầu:", error);
     }
   };
 
@@ -122,22 +147,50 @@ export default function Header() {
     return () => clearTimeout(delayDebounceFn);
   }, [keyword]);
 
+  // useEffect(() => {
+  //   if (!isSignedIn) return;
+
+  //   const timer = setTimeout(() => {
+  //     fetchCartItemCount();
+  //   }, 0);
+
+  //   const handleCartUpdated = () => {
+  //     fetchCartItemCount();
+  //   };
+
+  //   window.addEventListener("cart-updated", handleCartUpdated);
+
+  //   return () => {
+  //     clearTimeout(timer);
+  //     window.removeEventListener("cart-updated", handleCartUpdated);
+  //   };
+  // }, [isSignedIn]);
   useEffect(() => {
     if (!isSignedIn) return;
 
     const timer = setTimeout(() => {
       fetchCartItemCount();
+      fetchPendingRequestCount();
     }, 0);
 
     const handleCartUpdated = () => {
       fetchCartItemCount();
     };
 
+    const handleOrderRequestUpdated = () => {
+      fetchPendingRequestCount();
+    };
+
     window.addEventListener("cart-updated", handleCartUpdated);
+    window.addEventListener("order-request-updated", handleOrderRequestUpdated);
 
     return () => {
       clearTimeout(timer);
       window.removeEventListener("cart-updated", handleCartUpdated);
+      window.removeEventListener(
+        "order-request-updated",
+        handleOrderRequestUpdated,
+      );
     };
   }, [isSignedIn]);
 
@@ -362,6 +415,24 @@ export default function Header() {
               </span>
             )}
           </Link>
+
+          {/* Thông báo */}
+          {/* Thông báo yêu cầu đơn hàng */}
+          {isSignedIn && (
+            <Link
+              href="/order/request"
+              className="relative flex items-center justify-center w-9 h-9 rounded-xl bg-blue-700/50 hover:bg-blue-700 border border-blue-500/50 text-white transition"
+              title="Yêu cầu đơn hàng"
+            >
+              <Bell className="w-4 h-4" />
+
+              {pendingRequestCount > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 min-w-5 h-5 px-1 rounded-full bg-red-500 text-white text-[10px] flex items-center justify-center font-black border-2 border-blue-600 shadow">
+                  {pendingRequestCount > 99 ? "99+" : pendingRequestCount}
+                </span>
+              )}
+            </Link>
+          )}
         </div>
       </div>
     </header>
